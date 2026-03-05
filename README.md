@@ -18,7 +18,6 @@ An intelligent, fully serverless support ticket system built on AWS that leverag
 - [Running the Frontends](#running-the-frontends)
 - [AI Agents](#ai-agents)
 - [Services](#services)
-- [Testing](#testing)
 - [Monitoring & Observability](#monitoring--observability)
 
 ---
