@@ -32,9 +32,9 @@ NovaSupport is a three-portal support system:
 
 | Portal | Description | Default Port |
 |--------|-------------|-------------|
-| **Admin Portal** | Full dashboard for admins — manage tickets, teams, analytics, SLA, canned responses | `3000` |
-| **User Portal** | End-user facing — submit tickets, track status, chat with AI assistant, rate resolutions | `3001` |
-| **Team Portal** | For support agents — view assigned tickets, reply, resolve, translate messages | `3002` |
+| **Admin Portal** | Full dashboard for admins — manage tickets, teams, analytics, SLA, canned responses | 
+| **User Portal** | End-user facing — submit tickets, track status, chat with AI assistant, rate resolutions | 
+| **Team Portal** | For support agents — view assigned tickets, reply, resolve, translate messages | 
 
 All three portals share a single REST API backend deployed on AWS Lambda + API Gateway, with DynamoDB as the data store.
 
