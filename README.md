@@ -133,7 +133,6 @@ All three portals share a single REST API backend deployed on AWS Lambda + API G
 
 
 
----
 
 ## Prerequisites
 
