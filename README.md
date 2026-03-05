@@ -30,8 +30,8 @@ Built for the **AWS Nova Hackathon**.
 
 NovaSupport is a three-portal support system:
 
-| Portal | Description | Default Port |
-|--------|-------------|-------------|
+| Portal | Description | 
+|--------|-------------|
 | **Admin Portal** | Full dashboard for admins — manage tickets, teams, analytics, SLA, canned responses | 
 | **User Portal** | End-user facing — submit tickets, track status, chat with AI assistant, rate resolutions | 
 | **Team Portal** | For support agents — view assigned tickets, reply, resolve, translate messages | 
