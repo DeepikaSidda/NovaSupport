@@ -9,7 +9,7 @@ An intelligent, fully serverless support ticket system built on AWS that leverag
 ## Table of Contents
 
 - [Overview](#overview)
-- [Key Features](#key-features)
+- [Key Features — How It Works](#key-features--how-it-works-simple-explanation)
 - [Architecture](#architecture)
 - [AWS Services Used](#aws-services-used)
 - [Project Structure](#project-structure)
@@ -40,40 +40,46 @@ All three portals share a single REST API backend deployed on AWS Lambda + API G
 
 ---
 
-## Key Features
+## Key Features — How It Works (Simple Explanation)
 
-**AI-Powered Automation**
-- Automatic ticket routing to the correct team using Amazon Nova
-- Round-robin assignment to team members within the assigned team
-- AI-generated response suggestions for agents
-- Intelligent escalation detection (security/legal keywords, low AI confidence, max retries)
-- Multimodal attachment analysis (images, documents, videos) via Nova
-- AI solution generation from knowledge base
-- Semantic similar-ticket search using Nova Embeddings
+### 🤖 Smart Ticket Routing & Assignment
+When a customer submits a support ticket, the AI (Amazon Nova) reads the ticket and automatically figures out which team should handle it — billing, authentication, general support, etc. Then it assigns the ticket to a specific team member using round-robin, so the workload is shared fairly across the team.
 
-**Ticket Management**
-- Create, edit, delete, merge tickets
-- File attachments with S3 presigned URLs
-- Ticket activity/audit log
-- Status workflow: open → in-progress → escalated → resolved
-- Satisfaction ratings on resolved tickets
-- Canned responses for common issues
+### 🚨 Automatic Escalation
+If a ticket mentions sensitive topics like security breaches, legal issues, or compliance problems — or if the AI isn't confident enough in its analysis — the system automatically flags it for human review instead of trying to handle it on its own.
 
-**Communication**
-- Real-time messaging between agents and users
-- AI live chat assistant for end users
-- Multi-language translation (Amazon Translate + Comprehend auto-detection)
-- Translate dropdown on replies, messages, and resolutions
-- Voice input (transcription via Amazon Transcribe) and text-to-speech (Amazon Polly)
-- Resolution email notifications via Amazon SES
-- Real-time WebSocket notifications
+### 💬 AI Chat Assistant
+End users can chat directly with an AI assistant to get quick answers without waiting for a human agent. The assistant uses the knowledge base and past ticket data to provide helpful responses.
 
-**Operations**
-- SLA tracking and dashboard
-- Analytics engine with trend detection
-- CloudWatch dashboard with alarms
-- Automated follow-up scheduling (EventBridge every 15 min)
-- Knowledge base search
+### 🧠 AI-Powered Analysis
+The AI can analyze not just text, but also images, documents, and videos attached to tickets. It uses Amazon Nova's multimodal capabilities to understand what's in the attachments and include that in the ticket analysis. It also suggests AI-generated responses that agents can use or customize.
+
+### 🔍 Similar Ticket Search
+When a new ticket comes in, the system uses semantic search (Nova Embeddings) to find similar past tickets. This helps agents see how similar issues were resolved before, speeding up resolution time.
+
+### 🌐 Multi-Language Translation
+Tickets and messages can be translated into any language with one click. The system auto-detects the source language using Amazon Comprehend and translates using Amazon Translate. Translation is available on replies, messages, and resolution summaries.
+
+### 🎤 Voice Support
+Users can use voice input — the system transcribes speech to text (Amazon Transcribe) and can also read responses aloud using text-to-speech (Amazon Polly).
+
+### 📧 Email Notifications
+When a ticket is resolved, the system can send a styled resolution email to the customer via Amazon SES, so they know their issue has been addressed.
+
+### 📊 Analytics & SLA Tracking
+Admins get a dashboard showing ticket trends, response times, and SLA compliance. The system tracks how fast tickets are being responded to and resolved, and raises alarms if SLAs are at risk.
+
+### 📋 Ticket Management
+Full lifecycle management — create, edit, delete, merge duplicate tickets, track activity logs, manage status (open → in-progress → escalated → resolved), and let customers rate their experience after resolution.
+
+### 🔔 Real-Time Notifications
+WebSocket-based real-time notifications keep agents and users updated instantly when ticket status changes or new messages arrive.
+
+### ⏰ Automated Follow-Ups
+The system automatically checks for tickets that need follow-up every 15 minutes and schedules reminders, so nothing falls through the cracks.
+
+### 📚 Knowledge Base
+A searchable knowledge base stores proven solutions. The AI uses this to suggest solutions for new tickets, and agents can add new articles as they resolve issues.
 
 ---
 
@@ -202,7 +208,20 @@ Then open in your browser:
 | **Routing Agent** | `src/agents/routing-agent.ts` | Analyzes ticket content with Nova and assigns to the correct team (e.g., billing, auth, general) |
 | **Assignment Agent** | `src/agents/assignment-agent.ts` | Round-robin assignment of tickets to eligible team members |
 | **Escalation Agent** | `src/agents/escalation-agent.ts` | Flags tickets for human review based on: security/legal/compliance keywords, low AI confidence (<0.7), max retry attempts, complex multi-issue tickets |
-| **Response Agent** | `src/agents/response-agent.ts` | Generates contextual AI response suggestions using ticket history and knoup Scheduler | `follow-up-scheduler.ts` | Schedules and processes follow-up messages |
+| **Response Agent** | `src/agents/response-agent.ts` | Generates contextual AI response suggestions using ticket history and knowledge base |
+
+---
+
+## Services
+
+| Service | File | Purpose |
+|---------|------|---------|
+| Analytics Engine | `analytics-engine.ts` | Metrics aggregation, trend detection, alerts |
+| Auto Tagger | `auto-tagger.ts` | Automatically tags tickets based on content |
+| Document Analyzer | `document-analyzer.ts` | Analyzes document attachments via Nova |
+| Image Analyzer | `image-analyzer.ts` | Analyzes image attachments via Nova multimodal |
+| Video Analyzer | `video-analyzer.ts` | Analyzes video attachments |
+| Follow-up Scheduler | `follow-up-scheduler.ts` | Schedules and processes follow-up messages |
 | Knowledge Base | `knowledge-base.ts` | CRUD + semantic search for support articles |
 | Notification Service | `notification-service.ts` | Push notifications via WebSocket |
 | Semantic Search | `semantic-search.ts` | Embedding-based vector search using Nova Embeddings |
@@ -225,5 +244,4 @@ Then open in your browser:
 - **Logs**: All Lambda functions log to `/aws/novasupport` CloudWatch log group
 
 ---
-
 
