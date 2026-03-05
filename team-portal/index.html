@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovaSupport — Agent Portal</title>
+  <link rel="icon" type="image/jpeg" href="favicon.jpg">
+  <link rel="stylesheet" href="agent-styles.css">
+</head>
+<body>
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="favicon.jpg" alt="NovaSupport" width="48" height="48" style="border-radius:50%;">
+        <h1>NovaSupport</h1>
+        <p class="auth-subtitle">Team Member Portal</p>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Sign In</button>
+        <button class="auth-tab" data-tab="register">Sign Up</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="agent@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+        <div id="login-error" class="auth-error hidden"></div>
+      </form>
+      <form id="register-form" class="auth-form hidden">
+        <div class="form-group"><label for="reg-email">Email</label><input type="email" id="reg-email" placeholder="agent@example.com" required></div>
+        <div class="form-group"><label for="reg-password">Password</label><input type="password" id="reg-password" placeholder="Min 8 chars, upper+lower+digit" required></div>
+        <div class="form-group"><label for="reg-confirm">Confirm Password</label><input type="password" id="reg-confirm" placeholder="••••••••" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        <div id="register-error" class="auth-error hidden"></div>
+        <div id="register-success" class="auth-success hidden"></div>
+      </form>
+      <form id="confirm-form" class="auth-form hidden">
+        <p class="confirm-msg">Check your email for a verification code.</p>
+        <div class="form-group"><label for="confirm-code">Verification Code</label><input type="text" id="confirm-code" placeholder="123456" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Verify</button>
+        <div id="confirm-error" class="auth-error hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="app hidden">
+    <nav class="top-nav">
+      <div class="nav-brand">
+        <img src="favicon.jpg" alt="NovaSupport" width="28" height="28" style="border-radius:50%;">
+        <span>Agent Portal</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#/" class="nav-link active" data-view="dashboard">📋 Dashboard</a></li>
+        <li><a href="#/chats" class="nav-link" data-view="chats">💬 Live Chats <span id="chat-badge" class="chat-badge hidden">0</span></a></li>
+        <li><a href="#/profile" class="nav-link" data-view="profile">👤 Profile</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="agent-team" class="agent-team"></span>
+        <span id="agent-email" class="agent-email"></span>
+        <button id="sign-out-btn" class="btn btn-ghost btn-sm">Sign Out</button>
+      </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="spinner"></div>
+    </div>
+
+    <main class="main-content">
+      <!-- Dashboard View -->
+      <section id="view-dashboard" class="view active">
+        <div class="view-header">
+          <h2>My Dashboard</h2>
+          <div class="view-actions">
+            <select id="filter-status" class="select-input">
+              <option value="">All Statuses</option>
+              <option value="assigned">Assigned</option>
+              <option value="in_progress">In Progress</option>
+              <option value="pending_user">Pending User</option>
+              <option value="escalated">Escalated</option>
+            </select>
+            <select id="filter-priority" class="select-input">
+              <option value="">All Priorities</option>
+              <option value="10">Critical</option>
+              <option value="8">High</option>
+              <option value="5">Medium</option>
+              <option value="1">Low</option>
+            </select>
+          </div>
+        </div>
+        <div id="stats-panel" class="stats-panel"></div>
+        <h3 class="section-title">My Tickets</h3>
+        <div id="my-tickets" class="ticket-list"><p class="loading">Loading tickets...</p></div>
+        <h3 class="section-title">Unassigned Team Tickets</h3>
+        <div id="team-tickets" class="ticket-list"></div>
+      </section>
+
+      <!-- Ticket Workspace View -->
+      <section id="view-ticket" class="view">
+        <div id="ticket-workspace-content"><p class="loading">Loading ticket...</p></div>
+      </section>
+
+      <!-- Profile View -->
+      <section id="view-profile" class="view">
+        <div id="profile-content"><p class="loading">Loading profile...</p></div>
+      </section>
+
+      <!-- Live Chats View -->
+      <section id="view-chats" class="view">
+        <div id="chats-content"><p class="loading">Loading chats...</p></div>
+      </section>
+
+      <!-- Chat Room View -->
+      <section id="view-chatroom" class="view">
+        <div id="chatroom-content"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="config.js"></script>
+  <script src="agent-auth.js"></script>
+  <script src="agent-api.js"></script>
+  <script src="agent-views.js"></script>
+  <script src="agent-app.js"></script>
+</body>
+</html>

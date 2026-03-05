@@ -1,0 +1,7 @@
+{
+  "TableName": "NovaSupportStack-TicketsTableB76A19AF-YI6Y347YGV92",
+  "ProjectionExpression": "ticketId, subject, tags, #s, SK",
+  "ExpressionAttributeNames": {"#s": "status"},
+  "FilterExpression": "SK = :meta",
+  "ExpressionAttributeValues": {":meta": {"S": "METADATA"}}
+}

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovaSupport — AI Support Ticket System</title>
+  <link rel="icon" type="image/jpeg" href="favicon.jpg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="favicon.jpg" alt="NovaSupport" width="48" height="48" style="border-radius:50%;">
+        <h1>NovaSupport</h1>
+        <p class="auth-subtitle">AI-Powered Support Ticket System</p>
+        <p style="color:#b2bec3;font-size:0.8rem;margin-top:4px;">Admin Portal</p>
+      </div>
+      <div id="auth-tabs" class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Sign In</button>
+        <button class="auth-tab" data-tab="register">Sign Up</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="you@company.com" required></div>
+        <div class="form-group"><label for="login-password">Password</label><input type="password" id="login-password" placeholder="••••••••" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+        <div id="login-error" class="auth-error hidden"></div>
+      </form>
+      <form id="register-form" class="auth-form hidden">
+        <div class="form-group"><label for="reg-email">Email</label><input type="email" id="reg-email" placeholder="you@company.com" required></div>
+        <div class="form-group"><label for="reg-password">Password</label><input type="password" id="reg-password" placeholder="Min 8 chars, upper+lower+digit" required></div>
+        <div class="form-group"><label for="reg-confirm">Confirm Password</label><input type="password" id="reg-confirm" placeholder="••••••••" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        <div id="register-error" class="auth-error hidden"></div>
+        <div id="register-success" class="auth-success hidden"></div>
+      </form>
+      <form id="confirm-form" class="auth-form hidden">
+        <p class="confirm-msg">Check your email for a verification code.</p>
+        <div class="form-group"><label for="confirm-code">Verification Code</label><input type="text" id="confirm-code" placeholder="123456" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Verify</button>
+        <div id="confirm-error" class="auth-error hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="app hidden">
+    <nav class="sidebar">
+      <div class="sidebar-logo">
+        <img src="favicon.jpg" alt="NovaSupport" width="32" height="32" style="border-radius:50%;">
+        <span>NovaSupport</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#" class="nav-link active" data-view="dashboard"><span class="nav-icon">📊</span> Dashboard</a></li>
+        <li><a href="#" class="nav-link" data-view="tickets"><span class="nav-icon">🎫</span> Tickets</a></li>
+        <li><a href="#" class="nav-link" data-view="chat-requests"><span class="nav-icon">💬</span> Chat Requests <span id="chat-req-badge" class="notif-badge hidden">0</span></a></li>
+        <li><a href="#" class="nav-link" data-view="knowledge"><span class="nav-icon">📚</span> Knowledge Base</a></li>
+        <li><a href="#" class="nav-link" data-view="analytics"><span class="nav-icon">📈</span> Analytics</a></li>
+        <li><a href="#" class="nav-link" data-view="teams"><span class="nav-icon">👥</span> Teams</a></li>
+        <li><a href="#" class="nav-link" data-view="resolved"><span class="nav-icon">✅</span> Resolved Tickets</a></li>
+        <li><a href="#" class="nav-link" data-view="notifications"><span class="nav-icon">🔔</span> Notifications <span id="notif-badge" class="notif-badge hidden">0</span></a></li>
+        <li><a href="#" class="nav-link" data-view="canned-responses"><span class="nav-icon">📝</span> Canned Responses</a></li>
+        <li><a href="#" class="nav-link" data-view="sla-dashboard"><span class="nav-icon">⏱️</span> SLA Dashboard</a></li>
+        <li><a href="#" class="nav-link" data-view="bin"><span class="nav-icon">🗑️</span> Bin <span id="bin-badge" class="notif-badge hidden">0</span></a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-info"><span id="user-email" class="user-email"></span></div>
+        <button id="logout-btn" class="btn btn-ghost btn-sm">Sign Out</button>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <!-- Dashboard View -->
+      <section id="view-dashboard" class="view active">
+        <div class="view-header"><h2>Dashboard</h2><button class="btn btn-sm btn-outline" id="refresh-dashboard">↻ Refresh</button></div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Total Tickets</div></div>
+          <div class="stat-card stat-new"><div class="stat-value" id="stat-new">—</div><div class="stat-label">New</div></div>
+          <div class="stat-card stat-progress"><div class="stat-value" id="stat-progress">—</div><div class="stat-label">In Progress</div></div>
+          <div class="stat-card stat-resolved"><div class="stat-value" id="stat-resolved">—</div><div class="stat-label">Resolved</div></div>
+          <div class="stat-card stat-escalated"><div class="stat-value" id="stat-escalated">—</div><div class="stat-label">Escalated</div></div>
+        </div>
+        <div class="recent-section"><h3>Recent Tickets</h3><div id="recent-tickets" class="ticket-list"><p class="empty-state">Loading...</p></div></div>
+      </section>
+
+      <!-- Tickets View -->
+      <section id="view-tickets" class="view">
+        <div class="view-header">
+          <h2>All Tickets</h2>
+          <div class="view-actions">
+            <select id="filter-status" class="select-input">
+              <option value="">All Statuses</option>
+              <option value="new">New</option><option value="analyzing">Analyzing</option><option value="assigned">Assigned</option>
+              <option value="in_progress">In Progress</option><option value="pending_user">Pending User</option>
+              <option value="escalated">Escalated</option><option value="resolved">Resolved</option><option value="closed">Closed</option>
+            </select>
+
+          </div>
+        </div>
+        <div id="tickets-list" class="ticket-list"><p class="empty-state">Loading tickets...</p></div>
+      </section>
+
+      <!-- Chat Requests View -->
+      <section id="view-chat-requests" class="view">
+        <div class="view-header"><h2>💬 Chat Requests</h2><button class="btn btn-sm btn-outline" id="refresh-chat-requests">↻ Refresh</button></div>
+        <p style="color:#a0a0c0;font-size:0.9rem;margin-bottom:20px;">Incoming chat escalations from the AI assistant. Review the conversation and assign to the right team.</p>
+        <div id="chat-requests-list"><p class="loading">Loading chat requests...</p></div>
+      </section>
+
+      <!-- Ticket Detail Modal -->
+      <div id="ticket-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-wide">
+          <div class="modal-header"><h3 id="modal-title">Ticket Details</h3><button class="modal-close" onclick="App.closeModal()">&times;</button></div>
+          <div id="modal-body" class="modal-body"></div>
+        </div>
+      </div>
+
+      <!-- Knowledge Base View -->
+      <section id="view-knowledge" class="view">
+        <div class="view-header"><h2>Knowledge Base</h2></div>
+        <div class="kb-search-bar">
+          <input type="text" id="kb-search-input" class="kb-search-input" placeholder="Search knowledge base with AI...">
+          <button class="btn btn-primary btn-sm" id="kb-search-btn">🔍 Search</button>
+        </div>
+        <div id="kb-results" class="kb-results"><p class="empty-state">Search the knowledge base or browse articles below.</p></div>
+        <div class="kb-articles-section"><h3>All Articles</h3><div id="kb-articles" class="kb-articles"><p class="empty-state">Loading articles...</p></div></div>
+      </section>
+
+      <!-- Analytics View -->
+      <section id="view-analytics" class="view">
+        <div class="view-header"><h2>Analytics & AI Insights</h2>
+          <div class="view-actions">
+            <select id="analytics-period" class="select-input"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option></select>
+            <button class="btn btn-sm btn-outline" id="refresh-analytics">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="stats-grid" id="analytics-overview"></div>
+        <div class="analytics-grid">
+          <div class="analytics-card"><h4>Tickets by Status</h4><canvas id="chart-status" width="400" height="250"></canvas></div>
+          <div class="analytics-card"><h4>Tickets by Priority</h4><canvas id="chart-priority" width="400" height="250"></canvas></div>
+          <div class="analytics-card"><h4>AI Performance</h4><div id="ai-performance" class="ai-performance-grid"></div></div>
+          <div class="analytics-card"><h4>Trend Alerts</h4><div id="trend-alerts" class="trend-alerts"></div></div>
+          <div class="analytics-card"><h4>Category Distribution</h4><canvas id="chart-category" width="400" height="250"></canvas></div>
+          <div class="analytics-card analytics-card-wide"><h4>Team Performance</h4><div id="team-performance"></div></div>
+          <div class="analytics-card analytics-card-wide"><h4>Top Issues</h4><div id="top-issues"></div></div>
+        </div>
+      </section>
+
+      <!-- Teams View -->
+      <section id="view-teams" class="view">
+        <div class="view-header"><h2>Teams</h2><div style="display:flex;gap:8px;"><button class="btn btn-sm btn-primary" id="add-team-btn">+ Add Team</button><button class="btn btn-sm btn-outline" id="refresh-teams">↻ Refresh</button></div></div>
+        <div id="teams-grid" class="teams-grid"><p class="loading">Loading teams...</p></div>
+      </section>
+
+      <!-- Resolved Tickets View -->
+      <section id="view-resolved" class="view">
+        <div class="view-header"><h2>Resolved Tickets</h2><button class="btn btn-sm btn-outline" id="refresh-resolved">↻ Refresh</button></div>
+        <div id="resolved-grid" class="teams-grid"><p class="loading">Loading resolved tickets...</p></div>
+      </section>
+
+      <!-- Notifications View -->
+      <section id="view-notifications" class="view">
+        <div class="view-header"><h2>Notifications</h2>
+          <div class="view-actions">
+            <label class="checkbox-label"><input type="checkbox" id="notif-unread-only"> Unread only</label>
+            <button class="btn btn-sm btn-outline" id="refresh-notifications">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="notifications-list" class="notifications-list"><p class="empty-state">Loading notifications...</p></div>
+      </section>
+
+      <!-- Canned Responses Management View -->
+      <section id="view-canned-responses" class="view">
+        <div class="view-header">
+          <h2>📝 Canned Responses</h2>
+          <div class="view-actions">
+            <button class="btn btn-sm btn-primary" id="add-canned-response-btn">+ New Response</button>
+            <button class="btn btn-sm btn-outline" id="refresh-canned-responses">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="canned-response-form-container" class="hidden" style="margin-bottom:24px;"></div>
+        <div id="canned-responses-list"><p class="loading">Loading canned responses...</p></div>
+      </section>
+
+      <!-- SLA Dashboard View -->
+      <section id="view-sla-dashboard" class="view">
+        <div class="view-header">
+          <h2>⏱️ SLA Dashboard</h2>
+          <div class="view-actions">
+            <button class="btn btn-sm btn-outline" id="refresh-sla-dashboard">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="sla-dashboard-content"><p class="loading">Loading SLA metrics...</p></div>
+      </section>
+
+      <!-- Bin View -->
+      <section id="view-bin" class="view">
+        <div class="view-header">
+          <h2>🗑️ Bin</h2>
+          <div class="view-actions">
+            <button class="btn btn-sm btn-outline" id="refresh-bin">↻ Refresh</button>
+            <button class="btn btn-sm" id="empty-bin-btn" style="background:#dc2626;color:#fff;border:none;">🗑 Empty Bin</button>
+          </div>
+        </div>
+        <p style="color:#a0a0c0;font-size:0.9rem;margin-bottom:20px;">Deleted tickets are kept here for 30 days before being permanently removed.</p>
+        <div id="bin-list" class="ticket-list"><p class="empty-state">Bin is empty.</p></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

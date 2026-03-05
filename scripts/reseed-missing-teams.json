@@ -1,0 +1,102 @@
+{
+  "NovaSupportStack-TicketsTableB76A19AF-YI6Y347YGV92": [
+    {
+      "PutRequest": {
+        "Item": {
+          "PK": {"S": "TEAM#billing-team"},
+          "SK": {"S": "WORKLOAD"},
+          "teamId": {"S": "billing-team"},
+          "teamName": {"S": "Billing & Payments"},
+          "description": {"S": "Handles all billing, payment processing, invoicing, refund requests, subscription management, pricing inquiries, and payment method issues."},
+          "currentTicketCount": {"N": "0"},
+          "expertise": {"L": [{"S": "billing"}, {"S": "payments"}, {"S": "invoicing"}, {"S": "refunds"}, {"S": "subscriptions"}, {"S": "pricing"}, {"S": "charges"}, {"S": "credit"}, {"S": "plan"}]},
+          "updatedAt": {"S": "2026-03-04T00:00:00.000Z"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "PK": {"S": "TEAM#technical-team"},
+          "SK": {"S": "WORKLOAD"},
+          "teamId": {"S": "technical-team"},
+          "teamName": {"S": "Technical Support"},
+          "description": {"S": "Handles application-level bugs, software errors, API issues, integration problems, code defects, feature malfunctions, and client-side technical issues."},
+          "currentTicketCount": {"N": "0"},
+          "expertise": {"L": [{"S": "technical"}, {"S": "software"}, {"S": "bugs"}, {"S": "errors"}, {"S": "debugging"}, {"S": "api"}, {"S": "integration"}, {"S": "code"}, {"S": "application"}, {"S": "crash"}]},
+          "updatedAt": {"S": "2026-03-04T00:00:00.000Z"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "PK": {"S": "TEAM#product-team"},
+          "SK": {"S": "WORKLOAD"},
+          "teamId": {"S": "product-team"},
+          "teamName": {"S": "Product & Features"},
+          "description": {"S": "Handles feature requests, product feedback, UX/UI improvement suggestions, enhancement proposals, usability issues, design feedback, and new capability requests."},
+          "currentTicketCount": {"N": "0"},
+          "expertise": {"L": [{"S": "product"}, {"S": "features"}, {"S": "ux"}, {"S": "ui"}, {"S": "design"}, {"S": "feedback"}, {"S": "enhancement"}, {"S": "usability"}, {"S": "improvement"}, {"S": "request"}]},
+          "updatedAt": {"S": "2026-03-04T00:00:00.000Z"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "PK": {"S": "TEAM#auth-team"},
+          "SK": {"S": "WORKLOAD"},
+          "teamId": {"S": "auth-team"},
+          "teamName": {"S": "Authentication & Access"},
+          "description": {"S": "Handles login failures, password resets, account lockouts, MFA/2FA issues, SSO problems, OAuth/SAML configuration, user provisioning, role/permission issues, and access control problems."},
+          "currentTicketCount": {"N": "0"},
+          "expertise": {"L": [{"S": "authentication"}, {"S": "login"}, {"S": "password"}, {"S": "mfa"}, {"S": "2fa"}, {"S": "sso"}, {"S": "oauth"}, {"S": "saml"}, {"S": "access"}, {"S": "permissions"}, {"S": "roles"}, {"S": "account"}, {"S": "lockout"}, {"S": "cognito"}]},
+          "updatedAt": {"S": "2026-03-04T00:00:00.000Z"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "PK": {"S": "TEAM#networking-team"},
+          "SK": {"S": "WORKLOAD"},
+          "teamId": {"S": "networking-team"},
+          "teamName": {"S": "Networking & Connectivity"},
+          "description": {"S": "Handles network connectivity issues, VPN problems, CDN configuration, latency/timeout issues, CORS errors, WebSocket problems, API Gateway routing, and network security groups."},
+          "currentTicketCount": {"N": "0"},
+          "expertise": {"L": [{"S": "networking"}, {"S": "network"}, {"S": "vpn"}, {"S": "cdn"}, {"S": "latency"}, {"S": "timeout"}, {"S": "cors"}, {"S": "websocket"}, {"S": "proxy"}, {"S": "firewall"}, {"S": "bandwidth"}, {"S": "connectivity"}]},
+          "updatedAt": {"S": "2026-03-04T00:00:00.000Z"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "PK": {"S": "TEAM#email-team"},
+          "SK": {"S": "WORKLOAD"},
+          "teamId": {"S": "email-team"},
+          "teamName": {"S": "Email & Notifications"},
+          "description": {"S": "Handles email delivery failures, notification issues, SES configuration, email template problems, spam/deliverability issues, push notification failures, and communication channel problems."},
+          "currentTicketCount": {"N": "0"},
+          "expertise": {"L": [{"S": "email"}, {"S": "notifications"}, {"S": "ses"}, {"S": "smtp"}, {"S": "deliverability"}, {"S": "spam"}, {"S": "push"}, {"S": "sms"}, {"S": "templates"}, {"S": "messaging"}]},
+          "updatedAt": {"S": "2026-03-04T00:00:00.000Z"}
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "PK": {"S": "TEAM#general-support"},
+          "SK": {"S": "WORKLOAD"},
+          "teamId": {"S": "general-support"},
+          "teamName": {"S": "General Support"},
+          "description": {"S": "Handles general inquiries, onboarding assistance, how-to questions, documentation requests, and any tickets that do not clearly fit into a specialized team."},
+          "currentTicketCount": {"N": "0"},
+          "expertise": {"L": [{"S": "general"}, {"S": "onboarding"}, {"S": "help"}, {"S": "questions"}, {"S": "how-to"}, {"S": "documentation"}, {"S": "training"}, {"S": "getting started"}]},
+          "updatedAt": {"S": "2026-03-04T00:00:00.000Z"}
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "TableName": "NovaSupportStack-TicketsTableB76A19AF-YI6Y347YGV92",
+  "Key": {
+    "PK": {"S": "TICKET#TKT-fa6a5151-fa36-41b3-a85a-c3b07bf82576"},
+    "SK": {"S": "METADATA"}
+  },
+  "UpdateExpression": "SET tags = list_append(tags, :newTag)",
+  "ExpressionAttributeValues": {
+    ":newTag": {"L": [{"S": "chat-escalation"}]}
+  }
+}

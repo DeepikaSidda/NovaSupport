@@ -1,0 +1,5 @@
+{
+  "DefaultEmailOption": "CONFIRM_WITH_CODE",
+  "EmailSubject": "NovaSupport Admin - Verify Your Email",
+  "EmailMessage": "Hi there!\n\nWelcome to the NovaSupport Admin Portal.\n\nYour verification code is: {####}\n\nEnter this code to verify your email and access the admin dashboard.\n\nThis code expires in 24 hours. If you didn't create this account, you can safely ignore this email.\n\n- The NovaSupport Team"
+}

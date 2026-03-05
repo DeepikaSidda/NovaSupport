@@ -1,0 +1,5 @@
+{
+  "DefaultEmailOption": "CONFIRM_WITH_CODE",
+  "EmailSubject": "Welcome to NovaSupport Verify Your Email",
+  "EmailMessage": "Hi there!\n\nWelcome to NovaSupport — your AI-powered support platform.\n\nYour verification code is: {####}\n\nEnter this code in the app to verify your email and get started.\n\nThis code expires in 24 hours. If you didn't create this account, you can safely ignore this email.\n\n— The NovaSupport Team"
+}

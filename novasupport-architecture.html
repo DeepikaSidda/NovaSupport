@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NovaSupport Architecture</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a1a;display:flex;justify-content:center;padding:20px}svg{display:block}</style>
+</head>
+<body>
+<svg width="900" height="700" viewBox="0 0 900 700" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+<defs>
+<linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0984E3"/><stop offset="100%" stop-color="#74b9ff"/></linearGradient>
+<linearGradient id="gP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6C5CE7"/><stop offset="100%" stop-color="#a29bfe"/></linearGradient>
+<linearGradient id="gO" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E17055"/><stop offset="100%" stop-color="#fab1a0"/></linearGradient>
+<linearGradient id="gG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00B894"/><stop offset="100%" stop-color="#55efc4"/></linearGradient>
+<linearGradient id="gT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00CEC9"/><stop offset="100%" stop-color="#81ecec"/></linearGradient>
+<linearGradient id="gK" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E84393"/><stop offset="100%" stop-color="#fd79a8"/></linearGradient>
+<linearGradient id="gY" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FDCB6E"/><stop offset="100%" stop-color="#ffeaa7"/></linearGradient>
+<marker id="ad" markerWidth="8" markerHeight="8" refX="4" refY="8" orient="auto"><polygon points="0 0,8 0,4 8" fill="#a29bfe"/></marker>
+<filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.3"/></filter>
+</defs>
+<!-- Title -->
+<text x="450" y="30" text-anchor="middle" font-size="22" font-weight="700" fill="#a29bfe">NovaSupport &#x2014; System Architecture</text>
+<text x="450" y="50" text-anchor="middle" font-size="11" fill="#a0a0c0">100% Serverless on AWS &#xB7; Agentic AI Support Ticket System</text>
+<!-- Row 1: Portals -->
+<rect x="150" y="65" width="180" height="36" rx="8" fill="url(#gB)" filter="url(#sh)"/>
+<text x="240" y="88" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">User Portal</text>
+<rect x="470" y="65" width="180" height="36" rx="8" fill="url(#gB)" filter="url(#sh)"/>
+<text x="560" y="88" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">Admin Portal</text>
+<line x1="240" y1="101" x2="240" y2="130" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<line x1="560" y1="101" x2="560" y2="130" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<!-- Row 2: Auth -->
+<rect x="80" y="135" width="200" height="36" rx="8" fill="url(#gO)" filter="url(#sh)"/>
+<text x="180" y="158" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">Amazon Cognito (2 Pools)</text>
+<rect x="340" y="135" width="200" height="36" rx="8" fill="url(#gO)" filter="url(#sh)"/>
+<text x="440" y="158" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">WebSocket API GW</text>
+<rect x="600" y="135" width="200" height="36" rx="8" fill="url(#gO)" filter="url(#sh)"/>
+<text x="700" y="158" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">Real-time Notifications</text>
+<line x1="450" y1="171" x2="450" y2="200" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<!-- Row 3: API Gateway -->
+<rect x="180" y="205" width="540" height="36" rx="8" fill="url(#gP)" filter="url(#sh)"/>
+<text x="450" y="228" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">Amazon API Gateway (REST) &#x2014; 25+ Routes</text>
+<line x1="450" y1="241" x2="450" y2="270" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<!-- Row 4: Lambda -->
+<rect x="50" y="275" width="800" height="120" rx="12" fill="#00B894" fill-opacity="0.06" stroke="#00B894" stroke-opacity="0.4"/>
+<text x="450" y="296" text-anchor="middle" font-size="12" font-weight="700" fill="#55efc4">AWS LAMBDA &#x2014; 30+ Functions</text>
+<rect x="70" y="308" width="170" height="36" rx="6" fill="#00B894" fill-opacity="0.15" stroke="#00B894" stroke-opacity="0.3"/>
+<text x="155" y="330" text-anchor="middle" font-size="10" font-weight="600" fill="#c0c0e0">Ticket Operations</text>
+<rect x="260" y="308" width="140" height="36" rx="6" fill="#00B894" fill-opacity="0.15" stroke="#00B894" stroke-opacity="0.3"/>
+<text x="330" y="330" text-anchor="middle" font-size="10" font-weight="600" fill="#c0c0e0">AI &#x26; Analysis</text>
+<rect x="420" y="308" width="140" height="36" rx="6" fill="#00B894" fill-opacity="0.15" stroke="#00B894" stroke-opacity="0.3"/>
+<text x="490" y="330" text-anchor="middle" font-size="10" font-weight="600" fill="#c0c0e0">3 AI Agents</text>
+<rect x="580" y="308" width="140" height="36" rx="6" fill="#00B894" fill-opacity="0.15" stroke="#00B894" stroke-opacity="0.3"/>
+<text x="650" y="330" text-anchor="middle" font-size="10" font-weight="600" fill="#c0c0e0">Admin &#x26; Infra</text>
+<rect x="740" y="308" width="90" height="36" rx="6" fill="#00B894" fill-opacity="0.15" stroke="#00B894" stroke-opacity="0.3"/>
+<text x="785" y="330" text-anchor="middle" font-size="10" font-weight="600" fill="#c0c0e0">WebSocket</text>
+<text x="155" y="360" text-anchor="middle" font-size="9" fill="#a0a0c0">CRUD &#xB7; Messages &#xB7; Merge &#xB7; SLA</text>
+<text x="330" y="360" text-anchor="middle" font-size="9" fill="#a0a0c0">Chat &#xB7; Voice &#xB7; Translate</text>
+<text x="490" y="360" text-anchor="middle" font-size="9" fill="#a0a0c0">Route &#xB7; Respond &#xB7; Escalate</text>
+<text x="650" y="360" text-anchor="middle" font-size="9" fill="#a0a0c0">Analytics &#xB7; Email &#xB7; Teams</text>
+<text x="785" y="360" text-anchor="middle" font-size="9" fill="#a0a0c0">Connect &#xB7; Notify</text>
+<line x1="250" y1="395" x2="250" y2="425" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<line x1="450" y1="395" x2="450" y2="425" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<line x1="650" y1="395" x2="650" y2="425" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<!-- Row 5: Storage -->
+<rect x="80" y="430" width="220" height="40" rx="8" fill="url(#gT)" filter="url(#sh)"/>
+<text x="190" y="455" text-anchor="middle" font-size="12" font-weight="600" fill="#0a0a1a">Amazon DynamoDB</text>
+<rect x="340" y="430" width="180" height="40" rx="8" fill="url(#gT)" filter="url(#sh)"/>
+<text x="430" y="455" text-anchor="middle" font-size="12" font-weight="600" fill="#0a0a1a">Amazon S3</text>
+<rect x="560" y="430" width="180" height="40" rx="8" fill="url(#gT)" filter="url(#sh)"/>
+<text x="650" y="455" text-anchor="middle" font-size="12" font-weight="600" fill="#0a0a1a">Amazon SQS</text>
+<line x1="450" y1="470" x2="450" y2="500" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<!-- Row 6: AI/ML -->
+<rect x="50" y="505" width="800" height="65" rx="12" fill="#E84393" fill-opacity="0.06" stroke="#E84393" stroke-opacity="0.4"/>
+<text x="450" y="524" text-anchor="middle" font-size="12" font-weight="700" fill="#fd79a8">AI / ML SERVICES</text>
+<rect x="65" y="535" width="145" height="28" rx="6" fill="url(#gK)" filter="url(#sh)"/>
+<text x="137" y="554" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Bedrock Nova Lite</text>
+<rect x="225" y="535" width="140" height="28" rx="6" fill="url(#gK)" filter="url(#sh)"/>
+<text x="295" y="554" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Titan Embeddings</text>
+<rect x="380" y="535" width="120" height="28" rx="6" fill="url(#gK)" filter="url(#sh)"/>
+<text x="440" y="554" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Transcribe</text>
+<rect x="515" y="535" width="100" height="28" rx="6" fill="url(#gK)" filter="url(#sh)"/>
+<text x="565" y="554" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Polly</text>
+<rect x="630" y="535" width="110" height="28" rx="6" fill="url(#gK)" filter="url(#sh)"/>
+<text x="685" y="554" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Translate</text>
+<rect x="755" y="535" width="80" height="28" rx="6" fill="url(#gK)" filter="url(#sh)"/>
+<text x="795" y="554" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">SES</text>
+<line x1="450" y1="570" x2="450" y2="600" stroke="#a29bfe" stroke-width="2" marker-end="url(#ad)"/>
+<!-- Row 7: CDK -->
+<rect x="250" y="605" width="400" height="36" rx="8" fill="url(#gY)" filter="url(#sh)"/>
+<text x="450" y="628" text-anchor="middle" font-size="12" font-weight="600" fill="#0a0a1a">AWS CDK (TypeScript) &#x2014; Infrastructure as Code</text>
+<!-- Footer -->
+<text x="450" y="680" text-anchor="middle" font-size="10" fill="#636e72">NovaSupport &#xB7; 100% Serverless &#xB7; Auto-Scaling &#xB7; Pay-Per-Use</text>
+</svg>
+</body>
+</html>
