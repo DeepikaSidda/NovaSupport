@@ -2,6 +2,9 @@
 
 An intelligent, fully serverless support ticket system built on AWS that leverages **Amazon Nova** AI models to automate ticket routing, analysis, response generation, and escalation — with minimal human intervention.
 
+
+![NovaSupport Poster](novaposter.jpeg)
+
 ## 🌐 Live Demo Access
 
 You can explore **NovaSupport** using the live portals below:
