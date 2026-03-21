@@ -2,7 +2,33 @@
 
 An intelligent, fully serverless support ticket system built on AWS that leverages **Amazon Nova** AI models to automate ticket routing, analysis, response generation, and escalation — with minimal human intervention.
 
+## 🌐 Live Demo Access
 
+You can explore **NovaSupport** using the live portals below:
+
+
+## 🔑 Demo Credentials
+
+Use the following credentials to test different roles in the system:
+
+| Role  | Portal URL | Email | Password |
+|------|------------|-------|----------|
+| **Admin** | http://novasupport-admin.s3-website-us-east-1.amazonaws.com | siddadeepika@gmail.com | Admin@1235 |
+| **Team (Agent)** | http://novasupport-team.s3-website-us-east-1.amazonaws.com | deepikasid2111@gmail.com | Agent@1234 |
+| **User** | http://novasupport-user.s3-website-us-east-1.amazonaws.com | thedev3333@gmail.com | User@1234 |
+
+---
+## 🧪 How to Use
+
+1. Open the **User Portal**  
+2. Log in using the **User credentials**  
+3. Create a support ticket  
+4. Log in as **Admin or Team**  
+5. Observe:
+   - AI-based ticket routing  
+   - Priority classification  
+   - Suggested responses  
+   - Automated workflow  
 
 ---
 
@@ -12,16 +38,12 @@ An intelligent, fully serverless support ticket system built on AWS that leverag
 - [Key Features — How It Works](#key-features--how-it-works-simple-explanation)
 - [Architecture](#architecture)
 - [AWS Services Used](#aws-services-used)
-- [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Build & Deploy](#build--deploy)
 - [Running the Frontends](#running-the-frontends)
-- [Frontend Configuration](#frontend-configuration)
-- [API Endpoints](#api-endpoints)
 - [AI Agents](#ai-agents)
 - [Services](#services)
-- [Testing](#testing)
 - [Monitoring & Observability](#monitoring--observability)
 
 ---
