@@ -41,6 +41,13 @@ body {
 .auth-error { color: var(--red); font-size: 0.85rem; padding: 8px 12px; background: rgba(214,48,49,0.1); border-radius: 6px; }
 .auth-success { color: var(--green); font-size: 0.85rem; padding: 8px 12px; background: rgba(0,184,148,0.1); border-radius: 6px; }
 .confirm-msg { color: var(--text2); font-size: 0.9rem; }
+.auth-link-row { text-align: center; margin-top: 4px; }
+.auth-link { color: var(--accent); font-size: 0.85rem; text-decoration: none; }
+.auth-link:hover { text-decoration: underline; }
+.password-wrapper { position: relative; display: flex; align-items: center; }
+.password-wrapper input { flex: 1; padding-right: 40px; }
+.toggle-password { position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.6; transition: opacity 0.2s; padding: 4px; }
+.toggle-password:hover { opacity: 1; }
 
 /* ── Form Elements ── */
 .form-group { display: flex; flex-direction: column; gap: 7px; }

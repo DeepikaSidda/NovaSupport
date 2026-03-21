@@ -16,9 +16,9 @@ const client = new BedrockRuntimeClient({});
 const NOVA_EMBEDDING_MODEL_ID = 'amazon.titan-embed-text-v2:0';
 
 // Retry configuration (mirrors nova-client.ts)
-const MAX_RETRIES = 3;
-const INITIAL_BACKOFF_MS = 1000;
-const MAX_BACKOFF_MS = 10000;
+const MAX_RETRIES = 2;
+const INITIAL_BACKOFF_MS = 500;
+const MAX_BACKOFF_MS = 3000;
 
 // Default embedding dimension
 const DEFAULT_EMBEDDING_DIMENSION = 1024;
@@ -222,15 +222,14 @@ export async function generateEmbeddingWithFallback(
   try {
     return await generateEmbedding(request);
   } catch (error) {
-    if (error instanceof EmbeddingUnavailableError) {
-      logger.warn('Embedding service unavailable, using fallback embedding', {
-        textLength: request.text.length,
-      });
-      const dimensions = request.dimensions ?? DEFAULT_EMBEDDING_DIMENSION;
-      return {
-        embedding: generateFallbackEmbedding(request.text, dimensions),
-      };
-    }
-    throw error;
+    logger.warn('Embedding service call failed, using fallback embedding', {
+      textLength: request.text.length,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+    const dimensions = request.dimensions ?? DEFAULT_EMBEDDING_DIMENSION;
+    return {
+      embedding: generateFallbackEmbedding(request.text, dimensions),
+    };
   }
 }

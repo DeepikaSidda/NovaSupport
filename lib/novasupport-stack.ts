@@ -834,7 +834,7 @@ export class NovaSupportStack extends cdk.Stack {
       handler: 'src/handlers/chat-assistant.handler',
       code: lambda.Code.fromAsset('dist'),
       role: lambdaRole,
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(29),
       memorySize: 1024,
       environment: lambdaEnvironment,
     });

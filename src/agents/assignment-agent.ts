@@ -6,7 +6,7 @@
  * Flow: Routing Agent → Team → Assignment Agent → Individual Member
  */
 
-import { scanItems, updateItem, getItem } from '../utils/dynamodb-client';
+import { queryItems, updateItem, getItem, atomicIncrement } from '../utils/dynamodb-client';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('AssignmentAgent');
@@ -29,12 +29,6 @@ export interface AssignmentDecision {
   reasoning: string;
 }
 
-interface RoundRobinState {
-  teamId: string;
-  lastAssignedIndex: number;
-  updatedAt: string;
-}
-
 /**
  * Get eligible team members (role === 'member' only, excludes lead/manager)
  */
@@ -42,7 +36,8 @@ export async function getEligibleMembers(teamId: string): Promise<TeamMember[]> 
   logger.info('Fetching eligible members for team', { teamId });
 
   try {
-    const records = await scanItems(
+    // Use queryItems instead of scanItems for consistent ordering by SK
+    const records = await queryItems(
       'PK = :pk AND begins_with(SK, :sk)',
       { ':pk': `TEAM#${teamId}`, ':sk': 'MEMBER#' }
     );
@@ -58,6 +53,9 @@ export async function getEligibleMembers(teamId: string): Promise<TeamMember[]> 
         currentTicketCount: r.currentTicketCount || 0,
       }));
 
+    // Sort by memberId for deterministic round-robin ordering
+    members.sort((a, b) => a.memberId.localeCompare(b.memberId));
+
     logger.info('Found eligible members', { teamId, count: members.length });
     return members;
   } catch (error) {
@@ -67,42 +65,24 @@ export async function getEligibleMembers(teamId: string): Promise<TeamMember[]> 
 }
 
 /**
- * Get the current round-robin state for a team
+ * Atomically get the next round-robin index for a team.
+ * Uses DynamoDB atomic ADD to prevent race conditions when
+ * multiple tickets are processed concurrently.
+ * Returns the counter value AFTER increment (1-based).
  */
-async function getRoundRobinState(teamId: string): Promise<RoundRobinState> {
+async function getNextRoundRobinCounter(teamId: string): Promise<number> {
   const pk = `TEAM#${teamId}`;
   const sk = 'ROUND_ROBIN';
 
   try {
-    const record = await getItem(pk, sk);
-    if (record) {
-      return {
-        teamId,
-        lastAssignedIndex: record.lastAssignedIndex || -1,
-        updatedAt: record.updatedAt || new Date().toISOString(),
-      };
-    }
+    const newCounter = await atomicIncrement(pk, sk, 'counter', {
+      expression: 'SET updatedAt = :ts',
+      values: { ':ts': new Date().toISOString() },
+    });
+    return newCounter;
   } catch (error) {
-    logger.debug('No round-robin state found, starting fresh', { teamId });
-  }
-
-  return { teamId, lastAssignedIndex: -1, updatedAt: new Date().toISOString() };
-}
-
-/**
- * Save the round-robin state after assignment
- */
-async function saveRoundRobinState(teamId: string, lastIndex: number): Promise<void> {
-  const pk = `TEAM#${teamId}`;
-  const sk = 'ROUND_ROBIN';
-
-  try {
-    await updateItem(pk, sk,
-      'SET lastAssignedIndex = :idx, updatedAt = :ts',
-      { ':idx': lastIndex, ':ts': new Date().toISOString() }
-    );
-  } catch (error) {
-    logger.warn('Failed to persist round-robin state', { teamId, lastIndex });
+    logger.error('Failed to atomically increment round-robin counter', error instanceof Error ? error : new Error(String(error)));
+    throw error;
   }
 }
 
@@ -123,11 +103,11 @@ export async function assignToMember(
     return null;
   }
 
-  // Step 2: Get round-robin state
-  const rrState = await getRoundRobinState(teamId);
+  // Step 2: Atomically get next round-robin counter (prevents race conditions)
+  const counter = await getNextRoundRobinCounter(teamId);
 
-  // Step 3: Pick next member
-  const nextIndex = (rrState.lastAssignedIndex + 1) % members.length;
+  // Step 3: Pick member using modulo — counter is 1-based from ADD
+  const nextIndex = (counter - 1) % members.length;
   const selectedMember = members[nextIndex];
 
   logger.info('Round-robin selected member', {
@@ -135,6 +115,7 @@ export async function assignToMember(
     teamId,
     memberName: selectedMember.name,
     memberIndex: nextIndex,
+    counter,
     totalMembers: members.length,
   });
 
@@ -155,10 +136,7 @@ export async function assignToMember(
     throw error;
   }
 
-  // Step 5: Save round-robin state
-  await saveRoundRobinState(teamId, nextIndex);
-
-  // Step 6: Increment member workload
+  // Step 5: Increment member workload
   try {
     await updateItem(
       `TEAM#${teamId}`, `MEMBER#${selectedMember.memberId}`,

@@ -14,9 +14,9 @@ const client = new BedrockRuntimeClient({});
 const NOVA_2_LITE_MODEL_ID = 'amazon.nova-lite-v1:0';
 
 // Retry configuration
-const MAX_RETRIES = 3;
-const INITIAL_BACKOFF_MS = 1000;
-const MAX_BACKOFF_MS = 10000;
+const MAX_RETRIES = 2;
+const INITIAL_BACKOFF_MS = 500;
+const MAX_BACKOFF_MS = 3000;
 
 /**
  * Request parameters for Nova 2 Lite
@@ -190,15 +190,14 @@ export async function invokeNova2LiteWithFallback(
   try {
     return await invokeNova2Lite(request);
   } catch (error) {
-    if (error instanceof NovaUnavailableError) {
-      logger.warn('Nova 2 Lite unavailable, using fallback response', {
-        fallbackResponse,
-      });
-      return {
-        text: fallbackResponse,
-        stopReason: 'fallback',
-      };
-    }
-    throw error;
+    logger.warn('Nova 2 Lite call failed, using fallback response', {
+      fallbackResponse,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      text: fallbackResponse,
+      stopReason: 'fallback',
+    };
   }
 }

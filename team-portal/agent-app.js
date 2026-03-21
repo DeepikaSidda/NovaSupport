@@ -78,11 +78,33 @@ const AgentApp = (() => {
     document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
     document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
     document.getElementById('confirm-form').classList.toggle('hidden', tab !== 'confirm');
+    document.getElementById('forgot-form').classList.toggle('hidden', tab !== 'forgot');
+    document.getElementById('reset-form').classList.toggle('hidden', tab !== 'reset');
   }
 
   function bindAuthUI() {
     document.querySelectorAll('.auth-tab').forEach(t =>
       t.addEventListener('click', () => switchAuthTab(t.dataset.tab)));
+
+    // Forgot password link
+    document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      switchAuthTab('forgot');
+    });
+
+    // Password visibility toggle
+    document.querySelectorAll('.toggle-password').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = '🙈';
+        } else {
+          input.type = 'password';
+          btn.textContent = '👁';
+        }
+      });
+    });
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -122,6 +144,41 @@ const AgentApp = (() => {
         toast('Email verified! You can now sign in.', 'success');
         switchAuthTab('login');
       } catch (err) { showEl('confirm-error', err.message); }
+    });
+
+    // Forgot password - request code
+    document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideEl('forgot-error');
+      const email = document.getElementById('forgot-email').value.trim();
+      try {
+        await AgentAuth.forgotPassword(email);
+        pendingEmail = email;
+        switchAuthTab('reset');
+        toast('Reset code sent to your email.', 'success');
+      } catch (err) {
+        showEl('forgot-error', err.message);
+      }
+    });
+
+    // Reset password - confirm new password
+    document.getElementById('reset-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideEl('reset-error');
+      const code = document.getElementById('reset-code').value.trim();
+      const password = document.getElementById('reset-password').value.trim();
+      const confirm = document.getElementById('reset-confirm').value.trim();
+      if (password !== confirm) {
+        showEl('reset-error', 'Passwords do not match');
+        return;
+      }
+      try {
+        await AgentAuth.confirmForgotPassword(pendingEmail, code, password);
+        switchAuthTab('login');
+        toast('Password reset successful! You can now sign in.', 'success');
+      } catch (err) {
+        showEl('reset-error', err.message);
+      }
     });
   }
 

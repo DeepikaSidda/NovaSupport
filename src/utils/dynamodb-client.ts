@@ -100,6 +100,35 @@ export async function updateItem(
 }
 
 /**
+ * Atomically increment a counter and return the new value.
+ * Uses ADD to ensure concurrent calls each get a unique value.
+ */
+export async function atomicIncrement(
+  pk: string,
+  sk: string,
+  counterAttribute: string,
+  additionalUpdates?: { expression: string; values: Record<string, any> }
+): Promise<number> {
+  const updateParts = [`ADD ${counterAttribute} :inc`];
+  const values: Record<string, any> = { ':inc': 1 };
+
+  if (additionalUpdates) {
+    updateParts.push(additionalUpdates.expression);
+    Object.assign(values, additionalUpdates.values);
+  }
+
+  const result = await docClient.send(new UpdateCommand({
+    TableName: TABLE_NAME,
+    Key: { PK: pk, SK: sk },
+    UpdateExpression: updateParts.join(' '),
+    ExpressionAttributeValues: values,
+    ReturnValues: 'ALL_NEW',
+  }));
+
+  return (result.Attributes?.[counterAttribute] as number) ?? 0;
+}
+
+/**
  * Scan items from DynamoDB with optional filter
  */
 export async function scanItems(

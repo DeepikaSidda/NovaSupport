@@ -83,8 +83,8 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (assignedTeam) result.assignedTeam = assignedTeam;
     if (assignedTo !== undefined) result.assignedTo = assignedTo;
 
-    // Record activity for ticket timeline on status change
-    if (newStatus) {
+    // Record activity for ticket timeline on status change (only if status actually changed)
+    if (newStatus && newStatus !== existing.status) {
       try {
         await createActivityRecord(ticketId, 'status_change', body.assignedTo || 'system', {
           oldStatus: existing.status,

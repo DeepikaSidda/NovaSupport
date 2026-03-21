@@ -480,6 +480,15 @@ const App = (() => {
               <p>${esc(t.resolution || 'No resolution details')}</p>
               ${t.rootCause ? `<h4>Root Cause</h4><p>${esc(t.rootCause)}</p>` : ''}
               <p class="resolve-meta">Resolved at ${t.resolvedAt || '—'}</p>
+              ${t.satisfactionRating ? `
+              <div class="satisfaction-feedback" style="margin-top:16px;padding:14px;background:linear-gradient(135deg, rgba(255,193,7,0.1), rgba(255,152,0,0.1));border:1px solid rgba(255,193,7,0.3);border-radius:10px;">
+                <h4 style="margin:0 0 10px 0;color:#f59e0b;font-size:0.95rem;">⭐ Customer Satisfaction</h4>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span style="font-size:1.4rem;">${'★'.repeat(t.satisfactionRating)}${'☆'.repeat(5 - t.satisfactionRating)}</span>
+                  <span style="color:var(--text);font-weight:600;">${t.satisfactionRating}/5</span>
+                </div>
+                ${t.satisfactionFeedback ? `<div style="margin-top:10px;padding:10px;background:var(--bg2);border-radius:8px;"><p style="margin:0;color:var(--text);font-style:italic;">"${esc(t.satisfactionFeedback)}"</p></div>` : '<p style="margin:0;color:var(--text2);font-size:0.85rem;">No written feedback provided</p>'}
+              </div>` : ''}
               <div style="display:flex;gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap;">
                 <select id="resolved-translate-lang" class="select-input" style="min-width:160px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:0.85rem;">
                   <option value="">🌐 Translate resolution to...</option>
@@ -1444,8 +1453,15 @@ const App = (() => {
   }
 
   // ── Chat Requests View ──
-  let seenChatCount = 0;
   let chatRequestsPollInterval = null;
+
+  function getSeenChatIds() {
+    try { return JSON.parse(localStorage.getItem('ns_seen_chat_ids') || '[]'); } catch(e) { return []; }
+  }
+
+  function saveSeenChatIds(ids) {
+    try { localStorage.setItem('ns_seen_chat_ids', JSON.stringify(ids)); } catch(e) {}
+  }
 
   function startChatRequestsPoll() {
     stopChatRequestsPoll();
@@ -1468,15 +1484,17 @@ const App = (() => {
 
   function updateChatRequestBadge() {
     const chatTickets = allTickets.filter(t => (t.tags || []).includes('chat-escalation'));
+    const seenIds = getSeenChatIds();
+    const unseenCount = chatTickets.filter(t => !seenIds.includes(t.ticketId)).length;
     const badge = document.getElementById('chat-req-badge');
-    const newCount = chatTickets.length - seenChatCount;
-    if (newCount > 0) { badge.textContent = newCount; badge.classList.remove('hidden'); }
+    if (unseenCount > 0) { badge.textContent = unseenCount; badge.classList.remove('hidden'); }
     else { badge.classList.add('hidden'); }
   }
 
   function markChatRequestsSeen() {
     const chatTickets = allTickets.filter(t => (t.tags || []).includes('chat-escalation'));
-    seenChatCount = chatTickets.length;
+    const chatIds = chatTickets.map(t => t.ticketId);
+    saveSeenChatIds(chatIds);
     const badge = document.getElementById('chat-req-badge');
     if (badge) badge.classList.add('hidden');
   }
@@ -2216,6 +2234,59 @@ const App = (() => {
           <div class="issue-row"><span class="issue-rank">#${i+1}</span><span class="issue-name">${esc(issue.issue)}</span><span class="issue-count">${issue.count} tickets</span></div>
         `).join('');
       } else { topIssuesContainer.innerHTML = '<p class="empty-state">No issue data yet.</p>'; }
+
+      // Customer Feedback section - show recent ratings with feedback
+      const feedbackContainer = document.getElementById('customer-feedback');
+      if (feedbackContainer) {
+        const ticketsWithFeedback = allTickets.filter(t => t.satisfactionRating);
+        if (ticketsWithFeedback.length) {
+          const avgRating = ticketsWithFeedback.reduce((sum, t) => sum + t.satisfactionRating, 0) / ticketsWithFeedback.length;
+          const ratingCounts = [0, 0, 0, 0, 0];
+          ticketsWithFeedback.forEach(t => { if (t.satisfactionRating >= 1 && t.satisfactionRating <= 5) ratingCounts[t.satisfactionRating - 1]++; });
+          const recentFeedback = ticketsWithFeedback.filter(t => t.satisfactionFeedback).slice(0, 5);
+          
+          feedbackContainer.innerHTML = `
+            <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px;">
+              <div style="text-align:center;padding:16px;background:linear-gradient(135deg, rgba(255,193,7,0.1), rgba(255,152,0,0.1));border-radius:12px;min-width:120px;">
+                <div style="font-size:2rem;color:#f59e0b;">${avgRating.toFixed(1)}</div>
+                <div style="font-size:1.2rem;margin:4px 0;">${'★'.repeat(Math.round(avgRating))}${'☆'.repeat(5 - Math.round(avgRating))}</div>
+                <div style="font-size:0.85rem;color:var(--text2);">Average Rating</div>
+                <div style="font-size:0.75rem;color:var(--text2);margin-top:4px;">${ticketsWithFeedback.length} ratings</div>
+              </div>
+              <div style="flex:1;min-width:200px;">
+                <div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px;">Rating Distribution</div>
+                ${[5,4,3,2,1].map(r => {
+                  const count = ratingCounts[r-1];
+                  const pct = ticketsWithFeedback.length ? (count / ticketsWithFeedback.length * 100) : 0;
+                  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <span style="width:20px;font-size:0.85rem;">${r}★</span>
+                    <div style="flex:1;height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;">
+                      <div style="width:${pct}%;height:100%;background:${r >= 4 ? '#00b894' : r === 3 ? '#fdcb6e' : '#e17055'};"></div>
+                    </div>
+                    <span style="width:30px;font-size:0.75rem;color:var(--text2);">${count}</span>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>
+            ${recentFeedback.length ? `
+              <div style="margin-top:16px;">
+                <div style="font-size:0.85rem;color:var(--text2);margin-bottom:12px;">Recent Feedback</div>
+                ${recentFeedback.map(t => `
+                  <div style="padding:12px;background:var(--bg2);border-radius:8px;margin-bottom:8px;border-left:3px solid ${t.satisfactionRating >= 4 ? '#00b894' : t.satisfactionRating === 3 ? '#fdcb6e' : '#e17055'};">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                      <span style="font-size:0.9rem;">${'★'.repeat(t.satisfactionRating)}${'☆'.repeat(5 - t.satisfactionRating)}</span>
+                      <span style="font-size:0.75rem;color:var(--text2);">#${t.ticketId?.slice(0, 8) || '—'}</span>
+                    </div>
+                    <p style="margin:0;font-style:italic;color:var(--text);font-size:0.9rem;">"${esc(t.satisfactionFeedback)}"</p>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          `;
+        } else {
+          feedbackContainer.innerHTML = '<p class="empty-state">No customer feedback yet. Ratings will appear here once users rate resolved tickets.</p>';
+        }
+      }
 
       // Charts
       renderAnalyticsCharts(ov);

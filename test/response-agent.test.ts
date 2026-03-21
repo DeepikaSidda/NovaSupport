@@ -1,4 +1,4 @@
-﻿import {
+import {
   generateResponse,
   detectSentiment,
   adaptTone,
@@ -312,8 +312,11 @@ describe('generateResponse with personalization', () => {
 
     const response = await generateResponse(mockTicket, context);
 
+    // Should have frustrated tone adaptation
     expect(response.text).toContain('I understand your frustration');
+    // Should have user history context
     expect(response.text).toContain('Welcome back');
+    // Should still contain the actual response
     expect(response.text).toContain('We will fix this immediately');
   });
 });

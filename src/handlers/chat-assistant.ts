@@ -178,7 +178,13 @@ export async function processMessage(request: ChatRequest): Promise<ChatResponse
     content: message,
     timestamp,
   };
-  await putItem(userRecord);
+  try {
+    await putItem(userRecord);
+  } catch (error) {
+    logger.warn('Failed to store user message, continuing with response generation', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   // Classify the issue
   const category = await classifyIssue(message, conversationHistory || []);
@@ -252,10 +258,16 @@ ${solutionContext ? `\nProven solutions from resolved tickets:\n${solutionContex
 
 Respond naturally as a chat assistant:`;
 
-  const novaResponse = await invokeNova2LiteWithFallback(
-    { prompt, temperature: 0.7, maxTokens: 1024 },
-    FALLBACK_RESPONSE,
-  );
+  let novaResponse;
+  try {
+    novaResponse = await invokeNova2LiteWithFallback(
+      { prompt, temperature: 0.7, maxTokens: 1024 },
+      FALLBACK_RESPONSE,
+    );
+  } catch (error) {
+    logger.error('Nova response generation failed, using fallback', error instanceof Error ? error : undefined);
+    novaResponse = { text: FALLBACK_RESPONSE, stopReason: 'error-fallback' };
+  }
 
   // Calculate confidence
   const confidence = calculateChatConfidence(
@@ -285,7 +297,13 @@ Respond naturally as a chat assistant:`;
     confidence: adjustedConfidence,
     timestamp: assistantTimestamp,
   };
-  await putItem(assistantRecord);
+  try {
+    await putItem(assistantRecord);
+  } catch (error) {
+    logger.warn('Failed to store assistant message, continuing with response', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   // Build response based on confidence threshold
   const suggestedActions: string[] = [];

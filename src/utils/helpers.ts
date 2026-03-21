@@ -2,7 +2,8 @@
  * Helper utilities for NovaSupport
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
+const uuidv4 = randomUUID;
 
 /**
  * Generate a unique ticket ID

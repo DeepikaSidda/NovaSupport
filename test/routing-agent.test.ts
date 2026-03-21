@@ -570,4 +570,228 @@ describe('Routing Agent', () => {
       expect(decision.reasoning).toContain('No teams available');
     });
   });
-});
+
+  describe('workload balancing', () => {
+    test('should route to first team when all teams have equal workloads', async () => {
+      const ticket = createMockTicket({
+        subject: 'Payment processing issue',
+        description: 'Unable to process payment',
+      });
+
+      (ticketAnalyzer.analyzeTicket as jest.Mock).mockResolvedValue({
+        ticketId: ticket.id,
+        urgency: {
+          hasUrgentKeywords: false,
+          urgentKeywords: [],
+          urgencyScore: 5,
+        },
+        sentiment: {
+          sentiment: 'neutral',
+          sentimentScore: 0,
+          isFrustrated: false,
+          isAngry: false,
+        },
+        expertise: {
+          primaryExpertise: 'payments',
+          secondaryExpertise: [],
+          technicalTerms: ['payment', 'processing'],
+          confidence: 0.85,
+        },
+        analyzedAt: new Date(),
+      });
+
+      // All teams have equal workload of 10 tickets
+      (dynamodbClient.scanItems as jest.Mock).mockResolvedValue([
+        {
+          PK: 'TEAM#payments-1',
+          SK: 'WORKLOAD',
+          teamId: 'payments-1',
+          teamName: 'Payments Team 1',
+          currentTicketCount: 10,
+          expertise: ['payments', 'billing'],
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          PK: 'TEAM#payments-2',
+          SK: 'WORKLOAD',
+          teamId: 'payments-2',
+          teamName: 'Payments Team 2',
+          currentTicketCount: 10,
+          expertise: ['payments', 'transactions'],
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          PK: 'TEAM#payments-3',
+          SK: 'WORKLOAD',
+          teamId: 'payments-3',
+          teamName: 'Payments Team 3',
+          currentTicketCount: 10,
+          expertise: ['payments', 'refunds'],
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      const decision = await analyzeAndRoute(ticket);
+
+      // Should select first team when workloads are equal
+      expect(decision.assignedTo).toBe('payments-1');
+      expect(decision.confidence).toBeGreaterThan(0);
+      expect(decision.requiresSpecializedExpertise).toBe(false);
+      expect(decision.reasoning).toContain('payments');
+    });
+
+    test('should route to team with lowest workload when workloads are unbalanced', async () => {
+      const ticket = createMockTicket({
+        subject: 'Account security concern',
+        description: 'Suspicious activity on my account',
+      });
+
+      (ticketAnalyzer.analyzeTicket as jest.Mock).mockResolvedValue({
+        ticketId: ticket.id,
+        urgency: {
+          hasUrgentKeywords: false,
+          urgentKeywords: [],
+          urgencyScore: 7,
+        },
+        sentiment: {
+          sentiment: 'concerned',
+          sentimentScore: -0.3,
+          isFrustrated: false,
+          isAngry: false,
+        },
+        expertise: {
+          primaryExpertise: 'security',
+          secondaryExpertise: ['account'],
+          technicalTerms: ['security', 'account', 'suspicious'],
+          confidence: 0.9,
+        },
+        analyzedAt: new Date(),
+      });
+
+      // Teams with significantly unbalanced workloads
+      (dynamodbClient.scanItems as jest.Mock).mockResolvedValue([
+        {
+          PK: 'TEAM#security-1',
+          SK: 'WORKLOAD',
+          teamId: 'security-1',
+          teamName: 'Security Team 1',
+          currentTicketCount: 25,
+          expertise: ['security', 'fraud'],
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          PK: 'TEAM#security-2',
+          SK: 'WORKLOAD',
+          teamId: 'security-2',
+          teamName: 'Security Team 2',
+          currentTicketCount: 2, // Significantly lower workload
+          expertise: ['security', 'account-protection'],
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          PK: 'TEAM#security-3',
+          SK: 'WORKLOAD',
+          teamId: 'security-3',
+          teamName: 'Security Team 3',
+          currentTicketCount: 18,
+          expertise: ['security', 'compliance'],
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      const decision = await analyzeAndRoute(ticket);
+
+      // Should select team with lowest workload (security-2 with 2 tickets)
+      expect(decision.assignedTo).toBe('security-2');
+      expect(decision.reasoning).toContain('lowest workload: 2 tickets');
+      expect(decision.reasoning).toContain('3 qualified teams');
+      expect(decision.confidence).toBeGreaterThan(0.8);
+      expect(decision.alternativeAssignments).toBeDefined();
+      expect(decision.alternativeAssignments?.length).toBeGreaterThan(0);
+    });
+
+    test('should route to manual queue when no teams are available', async () => {
+      const ticket = createMockTicket({
+        subject: 'Technical support needed',
+        description: 'Need help with technical issue',
+      });
+
+      (ticketAnalyzer.analyzeTicket as jest.Mock).mockResolvedValue({
+        ticketId: ticket.id,
+        urgency: {
+          hasUrgentKeywords: false,
+          urgentKeywords: [],
+          urgencyScore: 5,
+        },
+        sentiment: {
+          sentiment: 'neutral',
+          sentimentScore: 0,
+          isFrustrated: false,
+          isAngry: false,
+        },
+        expertise: {
+          primaryExpertise: 'technical',
+          secondaryExpertise: [],
+          technicalTerms: ['technical', 'support'],
+          confidence: 0.8,
+        },
+        analyzedAt: new Date(),
+      });
+
+      // No teams available (empty array)
+      (dynamodbClient.scanItems as jest.Mock).mockResolvedValue([]);
+
+      const decision = await analyzeAndRoute(ticket);
+
+      // Should route to manual queue
+      expect(decision.assignedTo).toBe('manual-routing-queue');
+      expect(decision.confidence).toBe(0);
+      expect(decision.requiresSpecializedExpertise).toBe(true);
+      expect(decision.reasoning).toContain('No teams found');
+      expect(decision.reasoning).toContain('Manual routing required');
+    });
+
+    test('should route to manual queue when teams exist but none match expertise', async () => {
+      const ticket = createMockTicket({
+        subject: 'Advanced AI model training issue',
+        description: 'Need help optimizing neural network training',
+      });
+
+      (ticketAnalyzer.analyzeTicket as jest.Mock).mockResolvedValue({
+        ticketId: ticket.id,
+        urgency: {
+          hasUrgentKeywords: false,
+          urgentKeywords: [],
+          urgencyScore: 6,
+        },
+        sentiment: {
+          sentiment: 'neutral',
+          sentimentScore: 0,
+          isFrustrated: false,
+          isAngry: false,
+        },
+        expertise: {
+          primaryExpertise: 'machine-learning',
+          secondaryExpertise: ['neural-networks'],
+          technicalTerms: ['AI', 'neural', 'training'],
+          confidence: 0.9,
+        },
+        analyzedAt: new Date(),
+      });
+
+      // Teams exist but none have machine learning expertise
+      (dynamodbClient.scanItems as jest.Mock).mockResolvedValue([
+        {
+          PK: 'TEAM#general',
+          SK: 'WORKLOAD',
+          teamId: 'general',
+          teamName: 'General Support',
+          currentTicketCount: 5,
+          expertise: ['general', 'basic-support'],
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          PK: 'TEAM#billing',
+          SK: 'WORKLOAD',
+          teamId: 'billing',
+          teamName: 'Billing Te

@@ -1,0 +1,4 @@
+{
+  "PK": {"S": "TEAM#billing-team"},
+  "SK": {"S": "WORKLOAD"}
+}

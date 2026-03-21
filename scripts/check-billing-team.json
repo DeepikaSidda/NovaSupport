@@ -1,0 +1,4 @@
+{
+  ":pk": {"S": "TEAM#billing"},
+  ":sk": {"S": "MEMBER#"}
+}

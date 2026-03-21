@@ -61,6 +61,8 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       tags: item.tags || [],
       routingConfidence: item.routingConfidence,
       escalationReason: item.escalationReason,
+      satisfactionRating: item.satisfactionRating,
+      satisfactionFeedback: item.satisfactionFeedback,
     }));
 
     // Sort by createdAt descending

@@ -92,5 +92,21 @@ const AgentAuth = (() => {
     return token;
   }
 
-  return { signUp, confirmSignUp, signIn, signOut, getIdToken, getValidIdToken, getEmail, isAuthenticated };
+  async function forgotPassword(email) {
+    return cognitoCall('ForgotPassword', {
+      ClientId: CONFIG.COGNITO.CLIENT_ID,
+      Username: email,
+    });
+  }
+
+  async function confirmForgotPassword(email, code, newPassword) {
+    return cognitoCall('ConfirmForgotPassword', {
+      ClientId: CONFIG.COGNITO.CLIENT_ID,
+      Username: email,
+      ConfirmationCode: code,
+      Password: newPassword,
+    });
+  }
+
+  return { signUp, confirmSignUp, signIn, signOut, getIdToken, getValidIdToken, getEmail, isAuthenticated, forgotPassword, confirmForgotPassword };
 })();

@@ -92,7 +92,6 @@ describe('Nova 2 Lite Client', () => {
 
       mockSend
         .mockRejectedValueOnce(throttlingError)
-        .mockRejectedValueOnce(throttlingError)
         .mockResolvedValueOnce(mockResponse);
 
       const startTime = Date.now();
@@ -100,9 +99,9 @@ describe('Nova 2 Lite Client', () => {
       const duration = Date.now() - startTime;
 
       expect(result.text).toBe('Success after retry');
-      expect(mockSend).toHaveBeenCalledTimes(3);
-      // Should have waited at least 1000ms (first backoff) + 2000ms (second backoff)
-      expect(duration).toBeGreaterThanOrEqual(3000);
+      expect(mockSend).toHaveBeenCalledTimes(2);
+      // Should have waited at least 500ms (first backoff)
+      expect(duration).toBeGreaterThanOrEqual(500);
     });
 
     it('should retry on service unavailable exception', async () => {
@@ -249,10 +248,10 @@ describe('Nova 2 Lite Client', () => {
       mockSend.mockRejectedValue(throttlingError);
 
       await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow(NovaUnavailableError);
-      await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow('Nova 2 Lite unavailable after 3 attempts');
+      await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow('Nova 2 Lite unavailable after 2 attempts');
 
-      // Should have tried 3 times for each call
-      expect(mockSend).toHaveBeenCalledTimes(6);
+      // Should have tried 2 times for each call
+      expect(mockSend).toHaveBeenCalledTimes(4);
     }, 10000); // Increase timeout to 10 seconds
 
     it('should handle empty response text gracefully', async () => {
@@ -333,8 +332,8 @@ describe('Nova 2 Lite Client', () => {
 
       expect(result.text).toBe('Fallback response - please contact support');
       expect(result.stopReason).toBe('fallback');
-      // Should have tried 3 times (max retries)
-      expect(mockSend.mock.calls.length).toBeGreaterThanOrEqual(3);
+      // Should have tried 2 times (max retries)
+      expect(mockSend.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
 
     it('should use fallback for all NovaUnavailableError cases', async () => {
@@ -372,18 +371,14 @@ describe('Nova 2 Lite Client', () => {
 
       const duration = Date.now() - startTime;
 
-      // First retry: 1000ms, Second retry: 2000ms
-      // Total should be at least 3000ms
-      expect(duration).toBeGreaterThanOrEqual(3000);
-      // But less than max backoff * retries (10000 * 3)
-      expect(duration).toBeLessThan(30000);
+      // First retry: 500ms
+      // Total should be at least 500ms
+      expect(duration).toBeGreaterThanOrEqual(500);
+      // But less than max backoff * retries (3000 * 2)
+      expect(duration).toBeLessThan(10000);
     });
 
     it('should cap backoff at maximum value', async () => {
-      // This test verifies the backoff doesn't grow indefinitely
-      // The max backoff is 10000ms, so even with many retries,
-      // each retry should not exceed this value
-      
       const throttlingError = new Error('Rate exceeded');
       throttlingError.name = 'ThrottlingException';
 
@@ -399,11 +394,11 @@ describe('Nova 2 Lite Client', () => {
 
       const duration = Date.now() - startTime;
 
-      // With 3 retries and exponential backoff capped at 10000ms:
-      // Retry 1: 1000ms, Retry 2: 2000ms
-      // Total: ~3000ms
-      expect(duration).toBeGreaterThanOrEqual(3000);
-      expect(duration).toBeLessThan(15000); // Should be well under max
+      // With 2 retries and exponential backoff capped at 3000ms:
+      // Retry 1: 500ms
+      // Total: ~500ms
+      expect(duration).toBeGreaterThanOrEqual(500);
+      expect(duration).toBeLessThan(10000);
     });
   });
 
@@ -416,10 +411,10 @@ describe('Nova 2 Lite Client', () => {
       mockSend.mockRejectedValue(unavailableError);
 
       await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow(NovaUnavailableError);
-      await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow('Nova 2 Lite unavailable after 3 attempts');
+      await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow('Nova 2 Lite unavailable after 2 attempts');
 
       // Should have attempted all retries
-      expect(mockSend).toHaveBeenCalledTimes(6); // 3 attempts per call
+      expect(mockSend).toHaveBeenCalledTimes(4); // 2 attempts per call
     }, 10000);
 
     it('should handle network timeout errors', async () => {
@@ -429,7 +424,7 @@ describe('Nova 2 Lite Client', () => {
       mockSend.mockRejectedValue(timeoutError);
 
       await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow(NovaUnavailableError);
-      expect(mockSend).toHaveBeenCalledTimes(3);
+      expect(mockSend).toHaveBeenCalledTimes(2);
     }, 10000);
 
     it('should handle intermittent API failures', async () => {
@@ -447,16 +442,15 @@ describe('Nova 2 Lite Client', () => {
         })),
       };
 
-      // Fail twice, then succeed
+      // Fail once, then succeed
       mockSend
-        .mockRejectedValueOnce(serviceError)
         .mockRejectedValueOnce(serviceError)
         .mockResolvedValueOnce(mockResponse);
 
       const result = await invokeNova2Lite({ prompt: 'Test' });
 
       expect(result.text).toBe('Success after intermittent failure');
-      expect(mockSend).toHaveBeenCalledTimes(3);
+      expect(mockSend).toHaveBeenCalledTimes(2);
     });
 
     it('should handle API endpoint not found errors', async () => {
@@ -540,10 +534,10 @@ describe('Nova 2 Lite Client', () => {
       mockSend.mockRejectedValue(rateLimitError);
 
       await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow(NovaUnavailableError);
-      await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow('Nova 2 Lite unavailable after 3 attempts');
+      await expect(invokeNova2Lite({ prompt: 'Test' })).rejects.toThrow('Nova 2 Lite unavailable after 2 attempts');
 
       // Should have attempted all retries for both calls
-      expect(mockSend).toHaveBeenCalledTimes(6);
+      expect(mockSend).toHaveBeenCalledTimes(4);
     }, 10000);
 
     it('should apply exponential backoff for rate limiting', async () => {
@@ -563,9 +557,9 @@ describe('Nova 2 Lite Client', () => {
       const duration = Date.now() - startTime;
 
       // Should have waited with exponential backoff
-      // First retry: 1000ms, Second retry: 2000ms
-      expect(duration).toBeGreaterThanOrEqual(3000);
-      expect(mockSend).toHaveBeenCalledTimes(3);
+      // First retry: 500ms
+      expect(duration).toBeGreaterThanOrEqual(500);
+      expect(mockSend).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -584,7 +578,7 @@ describe('Nova 2 Lite Client', () => {
 
       expect(result.text).toBe(fallbackText);
       expect(result.stopReason).toBe('fallback');
-      expect(mockSend).toHaveBeenCalledTimes(3); // Should have tried all retries
+      expect(mockSend).toHaveBeenCalledTimes(2); // Should have tried all retries
     }, 10000);
 
     it('should use fallback response when rate limited persistently', async () => {
@@ -659,7 +653,7 @@ describe('Nova 2 Lite Client', () => {
 
       expect(result.text).toBe(fallbackText);
       expect(result.stopReason).toBe('fallback');
-      expect(mockSend).toHaveBeenCalledTimes(3); // All retries exhausted
+      expect(mockSend).toHaveBeenCalledTimes(2); // All retries exhausted
     }, 10000);
 
     it('should handle fallback with empty fallback text', async () => {

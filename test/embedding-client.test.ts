@@ -227,9 +227,9 @@ describe('Nova Embedding Client', () => {
 
       await expect(generateEmbedding({ text: 'Test' })).rejects.toThrow(EmbeddingUnavailableError);
       await expect(generateEmbedding({ text: 'Test' })).rejects.toThrow(
-        'Embedding service unavailable after 3 attempts'
+        'Embedding service unavailable after 2 attempts'
       );
-      expect(mockSend).toHaveBeenCalledTimes(6); // 3 attempts per call
+      expect(mockSend).toHaveBeenCalledTimes(4); // 2 attempts per call
     }, 15000);
 
     it('should apply exponential backoff between retries', async () => {
@@ -246,9 +246,9 @@ describe('Nova Embedding Client', () => {
       }
       const duration = Date.now() - startTime;
 
-      // First retry: 1000ms, Second retry: 2000ms = 3000ms minimum
-      expect(duration).toBeGreaterThanOrEqual(3000);
-      expect(mockSend).toHaveBeenCalledTimes(3);
+      // First retry: 500ms = 500ms minimum
+      expect(duration).toBeGreaterThanOrEqual(500);
+      expect(mockSend).toHaveBeenCalledTimes(2);
     }, 15000);
   });
 
@@ -389,10 +389,11 @@ describe('Nova Embedding Client', () => {
       expect(mockSend).toHaveBeenCalledTimes(1);
     });
 
-    it('should still throw for non-EmbeddingUnavailableError errors', async () => {
-      await expect(
-        generateEmbeddingWithFallback({ text: '' })
-      ).rejects.toThrow('Text input is required');
+    it('should return fallback for empty text input since all errors are caught', async () => {
+      const result = await generateEmbeddingWithFallback({ text: '' });
+
+      // With the updated fallback that catches all errors, empty text returns a fallback embedding
+      expect(result.embedding).toHaveLength(1024);
     });
   });
 });

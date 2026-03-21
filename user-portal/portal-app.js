@@ -132,6 +132,26 @@ const PortalApp = (() => {
       tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
     });
 
+    // Forgot password link
+    document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      switchAuthTab('forgot');
+    });
+
+    // Password visibility toggle
+    document.querySelectorAll('.toggle-password').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = '🙈';
+        } else {
+          input.type = 'password';
+          btn.textContent = '👁';
+        }
+      });
+    });
+
     // Login
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -179,6 +199,41 @@ const PortalApp = (() => {
         showEl('confirm-error', err.message);
       }
     });
+
+    // Forgot password - request code
+    document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideEl('forgot-error');
+      const email = val('forgot-email');
+      try {
+        await PortalAuth.forgotPassword(email);
+        pendingEmail = email;
+        switchAuthTab('reset');
+        showToast('Reset code sent to your email.', 'success');
+      } catch (err) {
+        showEl('forgot-error', err.message);
+      }
+    });
+
+    // Reset password - confirm new password
+    document.getElementById('reset-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideEl('reset-error');
+      const code = val('reset-code');
+      const password = val('reset-password');
+      const confirm = val('reset-confirm');
+      if (password !== confirm) {
+        showEl('reset-error', 'Passwords do not match');
+        return;
+      }
+      try {
+        await PortalAuth.confirmForgotPassword(pendingEmail, code, password);
+        switchAuthTab('login');
+        showToast('Password reset successful! You can now sign in.', 'success');
+      } catch (err) {
+        showEl('reset-error', err.message);
+      }
+    });
   }
 
   function switchAuthTab(tab) {
@@ -188,9 +243,13 @@ const PortalApp = (() => {
     document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
     document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
     document.getElementById('confirm-form').classList.toggle('hidden', tab !== 'confirm');
+    document.getElementById('forgot-form').classList.toggle('hidden', tab !== 'forgot');
+    document.getElementById('reset-form').classList.toggle('hidden', tab !== 'reset');
     hideEl('login-error');
     hideEl('register-error');
     hideEl('confirm-error');
+    hideEl('forgot-error');
+    hideEl('reset-error');
   }
 
   /* ── Router ── */
