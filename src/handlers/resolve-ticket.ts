@@ -13,6 +13,7 @@ import { storeSolution } from '../services/solution-knowledge-base';
 import { ResolveTicketRequest } from '../types/solution';
 import { createActivityRecord } from './ticket-activity';
 import { createInAppNotification } from '../services/notification-service';
+import { recordResolution } from '../services/agentcore-memory';
 
 const logger = createLogger('ResolveTicketHandler');
 
@@ -73,6 +74,24 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       });
     } catch (solutionError) {
       logger.error('Failed to store solution (ticket still resolved)', solutionError instanceof Error ? solutionError : undefined);
+    }
+
+    // Record this resolution into AgentCore Memory so the agents can recall
+    // how similar tickets were solved in the future. Best-effort, non-fatal.
+    try {
+      await recordResolution({
+        ticket: {
+          id: ticketId,
+          subject: existing.subject as string,
+          description: existing.description as string,
+        },
+        resolution: body.rootCause?.trim()
+          ? `${body.resolution.trim()}\n\nRoot cause: ${body.rootCause.trim()}`
+          : body.resolution.trim(),
+        team: existing.assignedTeam as string | undefined,
+      });
+    } catch (memoryError) {
+      logger.error('Failed to record resolution to AgentCore Memory', memoryError instanceof Error ? memoryError : undefined);
     }
 
     // Record activity for ticket timeline on resolution

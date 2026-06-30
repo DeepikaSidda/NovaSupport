@@ -794,4 +794,19 @@ describe('Routing Agent', () => {
           PK: 'TEAM#billing',
           SK: 'WORKLOAD',
           teamId: 'billing',
-          teamName: 'Billing Te
+          teamName: 'Billing Team',
+          currentTicketCount: 2,
+          expertise: ['billing', 'payments'],
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      const decision = await analyzeAndRoute(ticket);
+
+      // No team has machine-learning expertise → manual routing
+      expect(decision.assignedTo).toBe('manual-routing-queue');
+      expect(decision.requiresSpecializedExpertise).toBe(true);
+      expect(decision.reasoning).toContain('No teams found');
+    });
+  });
+});

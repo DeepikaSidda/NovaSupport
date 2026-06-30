@@ -1090,11 +1090,27 @@ const App = (() => {
   }
 
   function renderAISolutionCard(ai) {
+    const memories = Array.isArray(ai.recalledMemories) ? ai.recalledMemories : [];
+    const memoryPanel = memories.length
+      ? `<div class="ai-solution-section ai-memory-section" style="margin-top:12px;padding:12px;background:linear-gradient(135deg, rgba(108,92,231,0.12), rgba(162,155,254,0.12));border:1px solid rgba(108,92,231,0.35);border-radius:10px;">
+          <span class="ai-solution-label" style="color:#a29bfe;">🧠 AgentCore Memory — recalled ${memories.length} similar past resolution${memories.length > 1 ? 's' : ''}</span>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">
+            ${memories.map(m => `
+              <div style="padding:10px;background:var(--bg2);border-radius:8px;border-left:3px solid #6C5CE7;">
+                <div style="font-size:0.72rem;color:var(--text2);margin-bottom:4px;">relevance ${esc(String(m.score))}</div>
+                <p style="margin:0;font-size:0.85rem;color:var(--text);">${esc((m.content || '').slice(0, 400))}</p>
+              </div>
+            `).join('')}
+          </div>
+          <p style="margin:8px 0 0 0;font-size:0.72rem;color:var(--text2);">These prior resolutions were retrieved from Amazon Bedrock AgentCore Memory and used to ground the suggestion above.</p>
+        </div>`
+      : '';
     return `<div class="ai-solution-card">
       <div class="ai-solution-header"><span class="ai-solution-badge">🤖 Nova AI Solution</span><span class="ai-solution-model">${esc(ai.model || 'Amazon Nova')}</span></div>
       ${ai.diagnosis ? `<div class="ai-solution-section"><span class="ai-solution-label">Diagnosis</span><p>${esc(ai.diagnosis)}</p></div>` : ''}
       <div class="ai-solution-section"><span class="ai-solution-label">Recommended Solution</span><p>${esc(ai.solution)}</p></div>
       ${ai.prevention ? `<div class="ai-solution-section"><span class="ai-solution-label">Prevention</span><p>${esc(ai.prevention)}</p></div>` : ''}
+      ${memoryPanel}
       <div class="ss-actions">
         <button class="btn btn-sm btn-primary ss-apply-btn" data-resolution="${esc(ai.solution)}">📋 Apply Solution</button>
       </div>
@@ -2238,11 +2254,26 @@ const App = (() => {
       // Customer Feedback section - show recent ratings with feedback
       const feedbackContainer = document.getElementById('customer-feedback');
       if (feedbackContainer) {
-        const ticketsWithFeedback = allTickets.filter(t => t.satisfactionRating);
-        if (ticketsWithFeedback.length) {
-          const avgRating = ticketsWithFeedback.reduce((sum, t) => sum + t.satisfactionRating, 0) / ticketsWithFeedback.length;
+        // Fetch resolved tickets to get satisfaction data (they may not be in allTickets due to pagination)
+        let ticketsWithFeedback = allTickets.filter(t => t.satisfactionRating);
+        const analyticsScore = report ? report.satisfactionScore : null;
+        
+        // If no feedback found in allTickets, try fetching resolved tickets separately
+        if (!ticketsWithFeedback.length) {
+          try {
+            const resolvedData = await API.listTickets('resolved');
+            const resolvedTickets = Array.isArray(resolvedData) ? resolvedData : (resolvedData.tickets || []);
+            ticketsWithFeedback = resolvedTickets.filter(t => t.satisfactionRating);
+          } catch (_e) { /* ignore */ }
+        }
+        
+        if (ticketsWithFeedback.length || analyticsScore) {
+          const avgRating = ticketsWithFeedback.length 
+            ? ticketsWithFeedback.reduce((sum, t) => sum + t.satisfactionRating, 0) / ticketsWithFeedback.length
+            : analyticsScore || 0;
           const ratingCounts = [0, 0, 0, 0, 0];
           ticketsWithFeedback.forEach(t => { if (t.satisfactionRating >= 1 && t.satisfactionRating <= 5) ratingCounts[t.satisfactionRating - 1]++; });
+          const totalRatings = ticketsWithFeedback.length || (analyticsScore ? 1 : 0);
           const recentFeedback = ticketsWithFeedback.filter(t => t.satisfactionFeedback).slice(0, 5);
           
           feedbackContainer.innerHTML = `
@@ -2251,13 +2282,13 @@ const App = (() => {
                 <div style="font-size:2rem;color:#f59e0b;">${avgRating.toFixed(1)}</div>
                 <div style="font-size:1.2rem;margin:4px 0;">${'★'.repeat(Math.round(avgRating))}${'☆'.repeat(5 - Math.round(avgRating))}</div>
                 <div style="font-size:0.85rem;color:var(--text2);">Average Rating</div>
-                <div style="font-size:0.75rem;color:var(--text2);margin-top:4px;">${ticketsWithFeedback.length} ratings</div>
+                <div style="font-size:0.75rem;color:var(--text2);margin-top:4px;">${totalRatings} rating${totalRatings !== 1 ? 's' : ''}</div>
               </div>
               <div style="flex:1;min-width:200px;">
                 <div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px;">Rating Distribution</div>
                 ${[5,4,3,2,1].map(r => {
                   const count = ratingCounts[r-1];
-                  const pct = ticketsWithFeedback.length ? (count / ticketsWithFeedback.length * 100) : 0;
+                  const pct = totalRatings ? (count / totalRatings * 100) : 0;
                   return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                     <span style="width:20px;font-size:0.85rem;">${r}★</span>
                     <div style="flex:1;height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;">

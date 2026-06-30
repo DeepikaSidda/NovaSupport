@@ -10,6 +10,11 @@ import { analyzeTicket, TicketAnalysis, TeamInfoForAnalysis } from '../utils/tic
 import { scanItems, updateItem, getItem } from '../utils/dynamodb-client';
 import { TeamWorkloadRecord, TicketRecord } from '../types/dynamodb-schemas';
 import { createLogger } from '../utils/logger';
+import {
+  isMemoryEnabled,
+  recallSimilarResolutions,
+  extractTeamFromNamespace,
+} from '../services/agentcore-memory';
 
 const logger = createLogger('RoutingAgent');
 
@@ -60,10 +65,56 @@ export async function analyzeAndRoute(ticket: Ticket): Promise<RoutingDecision> 
   }
 
   // Step 5: Select team with lowest workload
-  const selectedTeam = selectTeamByWorkload(matchingTeams);
+  let selectedTeam = selectTeamByWorkload(matchingTeams);
+  let memoryPrecedentNote = '';
+
+  // Step 5b: Memory-driven routing — if AgentCore Memory recalls that similar
+  // tickets were previously resolved by a team that is also a qualified match,
+  // prefer that team (precedent beats pure workload balancing).
+  if (isMemoryEnabled()) {
+    try {
+      const precedents = await recallSimilarResolutions(ticket, 5);
+      const teamHits = new Map<string, number>();
+      for (const p of precedents) {
+        const team = extractTeamFromNamespace(p.namespaces);
+        if (team) teamHits.set(team, (teamHits.get(team) || 0) + 1);
+      }
+      // Find the most frequently-precedented team that is also a qualified match
+      let bestTeam: string | undefined;
+      let bestCount = 0;
+      for (const [team, count] of teamHits) {
+        if (count > bestCount && matchingTeams.some(t => t.teamId === team)) {
+          bestTeam = team;
+          bestCount = count;
+        }
+      }
+      if (bestTeam && bestTeam !== selectedTeam.teamId) {
+        const precedentTeam = matchingTeams.find(t => t.teamId === bestTeam)!;
+        logger.info('Memory precedent overrides workload selection', {
+          ticketId: ticket.id,
+          previousChoice: selectedTeam.teamId,
+          precedentTeam: bestTeam,
+          precedentCount: bestCount,
+        });
+        selectedTeam = precedentTeam;
+        memoryPrecedentNote = ` AgentCore Memory: ${bestCount} similar past ticket(s) were resolved by ${precedentTeam.teamName}, so it was preferred.`;
+      } else if (precedents.length > 0) {
+        memoryPrecedentNote = ` AgentCore Memory found ${precedents.length} similar past resolution(s) supporting this routing.`;
+      }
+    } catch (memErr) {
+      logger.warn('Memory-driven routing recall failed (non-fatal)', {
+        ticketId: ticket.id,
+        error: memErr instanceof Error ? memErr.message : String(memErr),
+      });
+    }
+  }
 
   // Step 6: Generate routing confidence score
-  const confidence = calculateRoutingConfidence(analysis, selectedTeam);
+  let confidence = calculateRoutingConfidence(analysis, selectedTeam);
+  // Strong precedent boosts confidence
+  if (memoryPrecedentNote.includes('were resolved by')) {
+    confidence = Math.min(1, confidence + 0.1);
+  }
 
   // Step 7: Identify alternative assignments
   const alternatives = matchingTeams
@@ -74,7 +125,7 @@ export async function analyzeAndRoute(ticket: Ticket): Promise<RoutingDecision> 
       confidence: calculateRoutingConfidence(analysis, t),
     }));
 
-  const reasoning = buildRoutingReasoning(analysis, selectedTeam, matchingTeams);
+  const reasoning = buildRoutingReasoning(analysis, selectedTeam, matchingTeams) + memoryPrecedentNote;
 
   logger.info('Routing decision complete', {
     ticketId: ticket.id,

@@ -148,6 +148,11 @@ export interface SharedWorkflowContext {
   similarTickets?: SimilarTicket[];
   generatedResponse?: GeneratedResponse;
   escalationDecision?: EscalationDecision;
+  /**
+   * Semantically similar past resolutions recalled from AgentCore Memory,
+   * injected before the response agent runs so it can learn from history.
+   */
+  pastResolutions?: Array<{ content: string; score: number; recordId?: string }>;
 }
 
 /**

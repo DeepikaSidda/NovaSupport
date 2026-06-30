@@ -152,9 +152,11 @@ export class NovaSupportStack extends cdk.Stack {
         'bedrock:InvokeModel',
         'bedrock:InvokeModelWithResponseStream',
         'bedrock:InvokeModelWithBidirectionalStream',
+        'bedrock:ApplyGuardrail',
       ],
       resources: [
         `arn:aws:bedrock:${this.region}::foundation-model/amazon.nova-*`,
+        `arn:aws:bedrock:${this.region}:${this.account}:guardrail/*`,
       ],
     }));
 
@@ -199,12 +201,35 @@ export class NovaSupportStack extends cdk.Stack {
       resources: ['*'],
     }));
 
+    // Grant Amazon Bedrock AgentCore Memory data-plane permissions so agents
+    // can persist resolutions and recall semantically similar past tickets.
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'bedrock-agentcore:CreateEvent',
+        'bedrock-agentcore:RetrieveMemoryRecords',
+        'bedrock-agentcore:ListMemoryRecords',
+        'bedrock-agentcore:GetMemoryRecord',
+      ],
+      resources: [`arn:aws:bedrock-agentcore:${this.region}:${this.account}:memory/*`],
+    }));
+
     // Shared Lambda environment variables
     const lambdaEnvironment: Record<string, string> = {
       TICKETS_TABLE_NAME: this.ticketsTable.tableName,
       ATTACHMENTS_BUCKET_NAME: this.attachmentsBucket.bucketName,
       TICKET_PROCESSING_QUEUE_URL: this.ticketProcessingQueue.queueUrl,
       MULTIMODAL_PROCESSING_QUEUE_URL: this.multimodalProcessingQueue.queueUrl,
+      // AgentCore Memory resource id. Empty until the Memory resource is
+      // provisioned; the integration is a safe no-op while unset. Pass via:
+      //   AGENTCORE_MEMORY_ID=<id> npx cdk deploy
+      AGENTCORE_MEMORY_ID: process.env.AGENTCORE_MEMORY_ID || '',
+      AGENTCORE_MEMORY_NAMESPACE: process.env.AGENTCORE_MEMORY_NAMESPACE || 'support/resolutions',
+      // Bedrock Guardrail (PII redaction + content filtering). Empty until
+      // provisioned; Nova calls run without a guardrail while unset. Pass via:
+      //   GUARDRAIL_ID=<id> GUARDRAIL_VERSION=<v> npx cdk deploy
+      GUARDRAIL_ID: process.env.GUARDRAIL_ID || '',
+      GUARDRAIL_VERSION: process.env.GUARDRAIL_VERSION || 'DRAFT',
     };
 
     // Lambda function template (placeholder - will be implemented in later tasks)
