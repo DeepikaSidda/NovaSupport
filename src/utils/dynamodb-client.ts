@@ -109,8 +109,11 @@ export async function atomicIncrement(
   counterAttribute: string,
   additionalUpdates?: { expression: string; values: Record<string, any> }
 ): Promise<number> {
-  const updateParts = [`ADD ${counterAttribute} :inc`];
+  // Alias the counter attribute name to avoid clashes with DynamoDB reserved
+  // keywords (e.g. "counter", "name", "status").
+  const updateParts = [`ADD #counterAttr :inc`];
   const values: Record<string, any> = { ':inc': 1 };
+  const names: Record<string, string> = { '#counterAttr': counterAttribute };
 
   if (additionalUpdates) {
     updateParts.push(additionalUpdates.expression);
@@ -122,6 +125,7 @@ export async function atomicIncrement(
     Key: { PK: pk, SK: sk },
     UpdateExpression: updateParts.join(' '),
     ExpressionAttributeValues: values,
+    ExpressionAttributeNames: names,
     ReturnValues: 'ALL_NEW',
   }));
 

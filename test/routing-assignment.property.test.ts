@@ -25,6 +25,10 @@ jest.mock('../src/utils/logger', () => ({
 }));
 
 describe('Property-Based Tests: Intelligent Routing Assignment', () => {
+  // Each property runs 100 generated iterations of the routing pipeline, which
+  // can exceed Jest's default 5s per-test limit. Give them ample headroom.
+  jest.setTimeout(60000);
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
