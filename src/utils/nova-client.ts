@@ -13,6 +13,11 @@ const client = new BedrockRuntimeClient({});
 // Nova 2 Lite model ID
 const NOVA_2_LITE_MODEL_ID = 'amazon.nova-lite-v1:0';
 
+// Optional Bedrock Guardrail applied to every Nova invocation (PII redaction +
+// content filtering). No-op when GUARDRAIL_ID is unset.
+const GUARDRAIL_ID = process.env.GUARDRAIL_ID || undefined;
+const GUARDRAIL_VERSION = process.env.GUARDRAIL_VERSION || 'DRAFT';
+
 // Retry configuration
 const MAX_RETRIES = 2;
 const INITIAL_BACKOFF_MS = 500;
@@ -107,6 +112,10 @@ export async function invokeNova2Lite(request: NovaRequest): Promise<NovaRespons
         contentType: 'application/json',
         accept: 'application/json',
         body: JSON.stringify(requestBody),
+        // Apply Bedrock Guardrail (PII redaction + content filters) when configured
+        ...(GUARDRAIL_ID
+          ? { guardrailIdentifier: GUARDRAIL_ID, guardrailVersion: GUARDRAIL_VERSION }
+          : {}),
       });
 
       const response = await client.send(command);

@@ -25,6 +25,11 @@ import {
 import { putItem, getItem, updateItem } from '../utils/dynamodb-client';
 import { createLogger } from '../utils/logger';
 import { assignToMember } from '../agents/assignment-agent';
+import {
+  isMemoryEnabled,
+  recallSimilarResolutions,
+  recordResolution,
+} from './agentcore-memory';
 
 const logger = createLogger('WorkflowOrchestrator');
 
@@ -318,6 +323,21 @@ export async function processTicket(ticket: Ticket): Promise<WorkflowResult> {
     step.status = 'running';
     step.startTime = new Date();
 
+    // Before generating a response, recall semantically similar past
+    // resolutions from AgentCore Memory and inject them into the shared
+    // context so the response agent can learn from how we handled similar
+    // tickets before. Best-effort: never blocks the workflow.
+    if (definition.agentType === AgentType.RESPONSE && isMemoryEnabled()) {
+      const pastResolutions = await recallSimilarResolutions(ticket);
+      if (pastResolutions.length > 0) {
+        state.sharedContext.pastResolutions = pastResolutions;
+        logger.info('Injected past resolutions into workflow context', {
+          workflowId: state.workflowId,
+          count: pastResolutions.length,
+        });
+      }
+    }
+
     logger.info('Executing workflow step', {
       workflowId: state.workflowId,
       stepId: step.stepId,
@@ -406,6 +426,22 @@ export async function processTicket(ticket: Ticket): Promise<WorkflowResult> {
   state.status = 'completed';
   state.completedAt = new Date().toISOString();
   await saveWorkflowState(state);
+
+  // Persist this resolution into AgentCore Memory so future tickets can
+  // learn from it. Best-effort: failures are logged inside the helper.
+  if (isMemoryEnabled()) {
+    const ctx = state.sharedContext;
+    const resolutionText =
+      ctx.generatedResponse?.text ||
+      ctx.routingDecision?.reasoning ||
+      'Ticket processed by NovaSupport agents.';
+    await recordResolution({
+      ticket,
+      resolution: resolutionText,
+      team: ctx.routingDecision?.assignedTo,
+      confidence: ctx.generatedResponse?.confidence ?? ctx.routingDecision?.confidence,
+    });
+  }
 
   logger.info('Workflow completed', {
     workflowId: state.workflowId,
