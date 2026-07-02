@@ -106,6 +106,12 @@ The system automatically checks for tickets that need follow-up every 15 minutes
 ### 📚 Knowledge Base
 A searchable knowledge base stores proven solutions. The AI uses this to suggest solutions for new tickets, and agents can add new articles as they resolve issues.
 
+### 🧠 Persistent Agent Memory (AgentCore Memory)
+The support agents remember how past tickets were resolved. When a ticket is resolved, the resolution is saved to **Amazon Bedrock AgentCore Memory**. When a new ticket comes in, the system recalls semantically similar past resolutions and uses them to route the ticket to the team that solved similar issues before and to ground the AI's suggested response in what actually worked previously. If the memory resource isn't configured, the system runs normally without it (safe fallback).
+
+### 🛡️ AI Safety Guardrails (Bedrock Guardrails)
+Every AI model call runs through an **Amazon Bedrock Guardrail** that redacts personally identifiable information (PII) and filters harmful content, keeping AI responses safe and privacy-compliant. Like memory, it's an optional layer — calls run normally if no guardrail is configured.
+
 ---
 
 ## Architecture
@@ -151,6 +157,8 @@ A searchable knowledge base stores proven solutions. The AI uses this to suggest
 | **Amazon SQS** | Async ticket processing queue + multimodal processing queue (with DLQs) |
 | **Amazon Cognito** | Two user pools — Admin/Agent pool and Portal (end-user) pool |
 | **Amazon Bedrock (Nova)** | Nova Lite for AI reasoning, Nova Embeddings for semantic search |
+| **Amazon Bedrock AgentCore Memory** | Persistent, semantic long-term memory of past ticket resolutions for memory-driven routing and grounded responses |
+| **Amazon Bedrock Guardrails** | PII redaction and content filtering applied to every Nova model call |
 | **Amazon Translate** | Multi-language ticket/message translation |
 | **Amazon Comprehend** | Auto-detect source language |
 | **Amazon Polly** | Text-to-speech for voice responses |
@@ -200,6 +208,24 @@ npx cdk bootstrap
 
 After deployment, CDK outputs the API Gateway URL, Cognito User Pool IDs, WebSocket endpoint, and other resource identifiers. Update the `config.js` in each portal with these values.
 
+### Optional: Enable AgentCore Memory & Guardrails
+
+These two features are off by default and turn on once their AWS resources are provisioned and passed to the deploy:
+
+```bash
+# 1. Provision the AgentCore Memory resource (prints a MEMORY_ID)
+node scripts/provision-agentcore-memory.js
+
+# 2. Provision the Bedrock Guardrail (prints GUARDRAIL_ID and GUARDRAIL_VERSION)
+node scripts/provision-guardrail.js
+
+# 3. Redeploy with the values so the Lambdas pick them up
+AGENTCORE_MEMORY_ID=<id> GUARDRAIL_ID=<id> GUARDRAIL_VERSION=<v> npx cdk deploy --require-approval never
+
+# 4. (Optional) Backfill past resolved tickets into memory
+AGENTCORE_MEMORY_ID=<id> node scripts/seed-agentcore-memory.js
+```
+
 ---
 
 ## Running the Frontends
@@ -241,6 +267,7 @@ Then open in your browser:
 
 | Service | File | Purpose |
 |---------|------|---------|
+| AgentCore Memory | `agentcore-memory.ts` | Records ticket resolutions to and recalls similar past resolutions from Amazon Bedrock AgentCore Memory |
 | Analytics Engine | `analytics-engine.ts` | Metrics aggregation, trend detection, alerts |
 | Auto Tagger | `auto-tagger.ts` | Automatically tags tickets based on content |
 | Document Analyzer | `document-analyzer.ts` | Analyzes document attachments via Nova |
