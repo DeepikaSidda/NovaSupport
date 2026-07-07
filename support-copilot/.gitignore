@@ -1,0 +1,8 @@
+# Exported real ticket data may contain PII — keep it local, don't commit.
+data/tickets/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
