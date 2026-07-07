@@ -72,6 +72,8 @@ def main() -> None:
         resolution = field(item, "resolution") or field(item, "resolutionSummary")
         created = field(item, "createdAt")
 
+        team_folder = slug(team) if team else "unassigned"
+
         md = f"""# Ticket {ticket_id}
 
 - Subject: {subject}
@@ -88,7 +90,11 @@ def main() -> None:
 ## Resolution
 {resolution or "(not resolved yet)"}
 """
-        path = os.path.join(TICKETS_DIR, f"{slug(ticket_id)}.md")
+        # Organize by team so the copilot can find "auth-team tickets" etc.
+        # simply by listing the team's folder.
+        team_dir = os.path.join(TICKETS_DIR, team_folder)
+        os.makedirs(team_dir, exist_ok=True)
+        path = os.path.join(team_dir, f"{slug(ticket_id)}.md")
         with open(path, "w", encoding="utf-8") as f:
             f.write(md)
         written += 1

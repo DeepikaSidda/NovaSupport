@@ -51,6 +51,16 @@ knowledge-base articles (available through your file tools) and then:
   - drafting clear, empathetic replies to customers,
   - answering questions about the support knowledge base.
 
+Data layout you can read with your file tools:
+  - data/knowledge-base.md          : general support knowledge
+  - data/tickets/<team>/<id>.md     : one file per ticket, grouped by team
+    (e.g. data/tickets/auth-team/, data/tickets/billing-team/,
+     data/tickets/unassigned/)
+
+To answer about a team's tickets: use list_directory on that team's folder,
+then read the individual ticket files with read_text_file. Read a few files at
+a time, not all at once.
+
 Always ground your answers in the files you can read. If you don't find
 relevant information, say so honestly instead of guessing. Keep replies concise
 and professional.
@@ -84,12 +94,42 @@ def main() -> None:
     print(f" Data  : {DATA_DIR}")
     print(" Type 'exit' or 'quit' to leave.\n")
 
-    bedrock_model = BedrockModel(model_id=MODEL_ID, region_name=REGION)
+    # streaming=False avoids Nova's "invalid sequence as part of ToolUse"
+    # streaming error; the non-streaming Converse API handles tool use reliably.
+    bedrock_model = BedrockModel(
+        model_id=MODEL_ID, region_name=REGION, streaming=False
+    )
     mcp_client = build_mcp_client()
 
     # The MCP server connection must stay open while the agent uses its tools.
     with mcp_client:
-        tools = mcp_client.list_tools_sync()
+        all_tools = mcp_client.list_tools_sync()
+
+        # Nova Pro can emit malformed tool-use sequences with the filesystem
+        # server's more complex tools (read_multiple_files, directory_tree,
+        # write/edit tools). Restrict the agent to a small, simple, READ-ONLY
+        # subset for reliable tool use.
+        allowed = {
+            "read_text_file",
+            "read_file",
+            "list_directory",
+            "search_files",
+            "get_file_info",
+            "list_allowed_directories",
+        }
+
+        def tool_name(t) -> str:
+            for attr in ("tool_name", "name"):
+                n = getattr(t, attr, None)
+                if isinstance(n, str):
+                    return n
+            spec = getattr(t, "tool_spec", None)
+            if isinstance(spec, dict):
+                return str(spec.get("name", ""))
+            return ""
+
+        tools = [t for t in all_tools if tool_name(t) in allowed] or all_tools
+
         agent = Agent(
             model=bedrock_model,
             tools=tools,
@@ -113,16 +153,26 @@ def main() -> None:
                 print("Goodbye!")
                 break
 
-            try:
-                response = agent(user_input)
-                # Strip the model's internal <thinking>...</thinking> reasoning
-                # so only the clean answer is shown to the user.
-                text = re.sub(
-                    r"<thinking>.*?</thinking>", "", str(response), flags=re.DOTALL
-                ).strip()
-                print(f"\nCopilot > {text}\n")
-            except Exception as err:  # keep the loop alive on errors
-                print(f"\n[error] {err}\n", file=sys.stderr)
+            # Retry once on Nova's occasional malformed tool-use error.
+            response = None
+            last_err = None
+            for attempt in range(2):
+                try:
+                    response = agent(user_input)
+                    break
+                except Exception as err:
+                    last_err = err
+
+            if response is None:
+                print(f"\n[error] {last_err}\n", file=sys.stderr)
+                continue
+
+            # Strip the model's internal <thinking>...</thinking> reasoning
+            # so only the clean answer is shown to the user.
+            text = re.sub(
+                r"<thinking>.*?</thinking>", "", str(response), flags=re.DOTALL
+            ).strip()
+            print(f"\nCopilot > {text}\n")
 
 
 if __name__ == "__main__":
