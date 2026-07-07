@@ -14,6 +14,14 @@ Satisfies Challenge 5 rules:
   * Has an interactive chat loop                    -> while True: input()
   * Original idea built on NovaSupport's own data
 
+Design note — why local tool wrappers:
+  Nova Pro is unreliable at *constructing* filesystem paths for the raw MCP
+  tools (it keeps asking the user "what's the path?"). To make the agent
+  deterministic, we expose a few dead-simple tools that take a TEAM NAME
+  (never a path). Each wrapper still performs the actual file access through
+  the filesystem MCP server via mcp_client.call_tool_sync(...), so the MCP
+  server is genuinely doing the work — we just give Nova a foolproof interface.
+
 Run:
     pip install -r requirements.txt
     # requires Node.js (for the MCP server via npx) and AWS creds with
@@ -24,8 +32,9 @@ Run:
 import os
 import re
 import sys
+import uuid
 
-from strands import Agent
+from strands import Agent, tool
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
 from mcp import StdioServerParameters, stdio_client
@@ -45,30 +54,30 @@ DATA_DIR = os.getenv(
 
 SYSTEM_PROMPT = """You are the NovaSupport Ops Copilot, an AI assistant for a
 customer-support team. You help support agents by reading past tickets and
-knowledge-base articles (available through your file tools) and then:
+knowledge-base articles and then:
   - summarizing tickets and past resolutions,
   - finding how similar issues were solved before,
   - drafting clear, empathetic replies to customers,
   - answering questions about the support knowledge base.
 
-Your allowed root directory contains:
-  - knowledge-base.md
-  - tickets/            (one subfolder per team, one .md file per ticket)
-      tickets/auth-team/
-      tickets/billing-team/
-      tickets/infrastructure-team/
-      tickets/networking-team/
-      tickets/technical-team/
-      tickets/unassigned/
+You have these tools (all read-only):
+  - list_teams()                     -> which teams have tickets
+  - list_team_tickets(team)          -> filenames for one team
+  - read_team_tickets(team)          -> full text of EVERY ticket for a team
+  - read_ticket(team, filename)      -> one ticket's full text
+  - read_knowledge_base()            -> the knowledge-base article
+  - search_tickets(query)            -> find tickets mentioning a keyword
+
+Valid team names: auth-team, billing-team, infrastructure-team,
+networking-team, technical-team, unassigned.
 
 IMPORTANT RULES:
-- You already know the layout above. NEVER ask the user for a file path.
-- Always USE YOUR TOOLS to answer. Do not ask clarifying questions about paths.
-- For a team question (e.g. "auth-team tickets"), immediately call
-  list_directory on "tickets/auth-team", then read_text_file on each ticket
-  file (a few at a time) and summarize.
-- If a folder is empty or missing, say so honestly.
-- Ground every answer in the files you read. Keep replies concise and professional.
+- NEVER ask the user for a file path. You do not need paths — the tools take a
+  plain team name like "auth-team".
+- To summarize or analyze a team's tickets, call read_team_tickets(team) ONCE,
+  then write the summary from what it returns.
+- Always ground answers in tool output. If a team has no tickets, say so.
+- Keep replies concise and professional.
 """
 
 
@@ -86,6 +95,22 @@ def build_mcp_client() -> MCPClient:
             )
         )
     )
+
+
+def _mcp_text(result) -> str:
+    """Extract plain text from an MCPToolResult (or dict-like) result."""
+    content = getattr(result, "content", None)
+    if content is None and isinstance(result, dict):
+        content = result.get("content")
+    parts = []
+    for block in content or []:
+        if isinstance(block, dict):
+            t = block.get("text")
+        else:
+            t = getattr(block, "text", None)
+        if t:
+            parts.append(str(t))
+    return "\n".join(parts) if parts else str(result)
 
 
 def main() -> None:
@@ -108,36 +133,68 @@ def main() -> None:
 
     # The MCP server connection must stay open while the agent uses its tools.
     with mcp_client:
-        all_tools = mcp_client.list_tools_sync()
 
-        # Nova Pro can emit malformed tool-use sequences with the filesystem
-        # server's more complex tools (read_multiple_files, directory_tree,
-        # write/edit tools). Restrict the agent to a small, simple, READ-ONLY
-        # subset for reliable tool use.
-        allowed = {
-            "read_text_file",
-            "read_file",
-            "list_directory",
-            "search_files",
-            "get_file_info",
-            "list_allowed_directories",
-        }
+        def _call(name: str, arguments: dict) -> str:
+            """Invoke a filesystem MCP tool and return its text output."""
+            result = mcp_client.call_tool_sync(str(uuid.uuid4()), name, arguments)
+            return _mcp_text(result)
 
-        def tool_name(t) -> str:
-            for attr in ("tool_name", "name"):
-                n = getattr(t, attr, None)
-                if isinstance(n, str):
-                    return n
-            spec = getattr(t, "tool_spec", None)
-            if isinstance(spec, dict):
-                return str(spec.get("name", ""))
-            return ""
+        # ---- Local tools: simple team-name interface, MCP does the work ----
 
-        tools = [t for t in all_tools if tool_name(t) in allowed] or all_tools
+        @tool
+        def list_teams() -> str:
+            """List the support teams (folders) that have tickets."""
+            return _call("list_directory", {"path": "tickets"})
+
+        @tool
+        def list_team_tickets(team: str) -> str:
+            """List the ticket filenames for one team (e.g. team='auth-team')."""
+            return _call("list_directory", {"path": f"tickets/{team}"})
+
+        @tool
+        def read_team_tickets(team: str) -> str:
+            """Read the full text of EVERY ticket for a team at once.
+
+            Best tool for summarizing or analyzing a whole team. Pass a plain
+            team name like 'auth-team' or 'billing-team'.
+            """
+            listing = _call("list_directory", {"path": f"tickets/{team}"})
+            files = re.findall(r"([A-Za-z0-9._-]+\.md)", listing)
+            if not files:
+                return f"No tickets found for team '{team}'."
+            chunks = []
+            for fname in files:
+                body = _call("read_text_file", {"path": f"tickets/{team}/{fname}"})
+                chunks.append(f"===== {fname} =====\n{body}")
+            return "\n\n".join(chunks)
+
+        @tool
+        def read_ticket(team: str, filename: str) -> str:
+            """Read one ticket's full text (team='auth-team', filename='TKT-....md')."""
+            return _call("read_text_file", {"path": f"tickets/{team}/{filename}"})
+
+        @tool
+        def read_knowledge_base() -> str:
+            """Read the support knowledge-base article."""
+            return _call("read_text_file", {"path": "knowledge-base.md"})
+
+        @tool
+        def search_tickets(query: str) -> str:
+            """Find ticket files whose content or name matches a keyword."""
+            return _call("search_files", {"path": ".", "pattern": query})
+
+        local_tools = [
+            list_teams,
+            list_team_tickets,
+            read_team_tickets,
+            read_ticket,
+            read_knowledge_base,
+            search_tickets,
+        ]
 
         agent = Agent(
             model=bedrock_model,
-            tools=tools,
+            tools=local_tools,
             system_prompt=SYSTEM_PROMPT,
             # Disable the default streaming printer so we control the output
             # (prevents the reply being printed twice).
