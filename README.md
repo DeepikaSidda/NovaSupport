@@ -47,6 +47,7 @@ Use the following credentials to test different roles in the system:
 - [Running the Frontends](#running-the-frontends)
 - [AI Agents](#ai-agents)
 - [Services](#services)
+- [NovaSupport Ops Copilot (MCP-Powered Agent)](#novasupport-ops-copilot-mcp-powered-agent)
 - [Monitoring & Observability](#monitoring--observability)
 
 ---
@@ -287,6 +288,37 @@ Then open in your browser:
 
 ---
 
+
+## NovaSupport Ops Copilot (MCP-Powered Agent)
+
+An interactive terminal copilot (in `support-copilot/`) that lets a support agent chat with NovaSupport's own ticket history — summarizing tickets, finding how similar issues were solved before, and drafting customer replies. It is built with the **Strands Agents SDK**, reasons with **Amazon Nova Pro** on Bedrock, and reads ticket data through the official **filesystem MCP server**.
+
+It satisfies all five "Build Your Own MCP-Powered Agent" rules:
+
+| # | Rule | How it's met |
+|---|------|--------------|
+| 1 | Must use Strands Agents SDK | Built on `strands.Agent` with `@tool`-decorated tools |
+| 2 | Must use at least one MCP server | Uses the filesystem MCP server (`@modelcontextprotocol/server-filesystem`) — every file read goes through its `list_directory`, `read_text_file`, and `search_files` tools |
+| 3 | Must use Amazon Nova Pro (or any Bedrock model) | `BedrockModel(model_id="amazon.nova-pro-v1:0")` |
+| 4 | Must have an interactive chat loop | Terminal `You >` / `Copilot >` loop |
+| 5 | Must be your own creative idea | Original Ops Copilot grounded in NovaSupport's real support history |
+
+### Run it
+
+```bash
+cd support-copilot
+pip install -r requirements.txt
+
+# One-time: export tickets from DynamoDB into data/ (requires AWS creds)
+python export_tickets.py
+
+# Start chatting
+python copilot.py
+```
+
+Then ask things like `summarize the auth-team tickets`, `how were password reset issues resolved before?`, or `draft a reply for the 2FA ticket`. Type `exit` to quit. (Real ticket data under `support-copilot/data/` is gitignored to protect PII.)
+
+---
 
 ## Monitoring & Observability
 
